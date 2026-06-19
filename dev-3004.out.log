@@ -1,9 +1,0 @@
-
-> daydrop@0.1.0 dev
-> next dev --port 3004
-
-▲ Next.js 16.2.9 (Turbopack)
-- Local:         http://localhost:3004
-- Network:       http://192.168.3.229:3004
-✓ Ready in 873ms
-[?25h
