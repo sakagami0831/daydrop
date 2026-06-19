@@ -14,7 +14,8 @@ export function AuthPanel() {
           </p>
           <h1 className="text-4xl font-black tracking-tight">DayDrop</h1>
           <p className="mt-3 text-sm leading-7 text-[#7d6a5c]">
-            タイムラインを流し見るのではなく、書いた日記を届けたい相手に届けて、感想を受け取るためのMVPです。
+            日記を書き、届けたい相手に届け、感想をもらうためのMVPです。
+            流れていくタイムラインではなく、届いた日記をゆっくり読む体験を優先します。
           </p>
         </div>
 
@@ -36,7 +37,7 @@ export function AuthPanel() {
                 <span className="min-w-0">
                   <span className="block font-bold">{user.name}</span>
                   <span className="block truncate text-sm text-[#9f8574]">
-                    @{user.handle}
+                    {user.title} / @{user.handle}
                   </span>
                 </span>
               </button>
@@ -47,4 +48,3 @@ export function AuthPanel() {
     </main>
   );
 }
-

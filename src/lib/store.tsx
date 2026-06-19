@@ -30,7 +30,10 @@ type DraftDiary = {
   imageUrl?: string;
   visibility: Visibility;
   recipientIds: string[];
+  tags?: string[];
 };
+
+type ProfileInput = Pick<User, "name" | "handle" | "title" | "bio">;
 
 type DayDropState = {
   users: User[];
@@ -42,16 +45,20 @@ type DayDropState = {
 
 type DayDropContextValue = DayDropState & {
   login: (userId: string) => void;
-  updateProfile: (input: Pick<User, "name" | "handle" | "bio">) => void;
-  createDiary: (draft: DraftDiary) => Diary;
-  addImpression: (diaryId: string, body: string) => void;
+  updateProfile: (input: ProfileInput) => void;
+  createDiary: (draft: DraftDiary) => Diary | null;
+  addImpression: (diaryId: string, body: string) => boolean;
   toggleLike: (diaryId: string) => void;
+  toggleFollow: (targetUserId: string) => void;
   markNotificationRead: (notificationId: string) => void;
   getUser: (userId: string) => User | undefined;
   getVisibleDiaries: () => Diary[];
+  getDiaryCount: (userId: string) => number;
+  searchDiaries: (query: string, tag?: string) => Diary[];
+  searchUsers: (query: string) => User[];
 };
 
-const storageKey = "daydrop-mvp-state";
+const storageKey = "daydrop-mvp-audit-state";
 const DayDropContext = createContext<DayDropContextValue | null>(null);
 
 const initialState: DayDropState = {
@@ -65,6 +72,18 @@ const initialState: DayDropState = {
 const makeId = (prefix: string) =>
   `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
+const normalizeState = (state: DayDropState): DayDropState => ({
+  ...state,
+  diaries: state.diaries.map((diary) => ({
+    ...diary,
+    tags: diary.tags ?? [],
+  })),
+  notifications: state.notifications.map((notification) => ({
+    ...notification,
+    type: notification.type ?? "diary_delivered",
+  })),
+});
+
 const loadInitialState = () => {
   if (typeof window === "undefined") {
     return initialState;
@@ -76,7 +95,7 @@ const loadInitialState = () => {
   }
 
   try {
-    return JSON.parse(saved) as DayDropState;
+    return normalizeState(JSON.parse(saved) as DayDropState);
   } catch {
     window.localStorage.removeItem(storageKey);
     return initialState;
@@ -95,6 +114,12 @@ export function DayDropProvider({ children }: { children: ReactNode }) {
     [state.users],
   );
 
+  const getDiaryCount = useCallback(
+    (userId: string) =>
+      state.diaries.filter((diary) => diary.authorId === userId).length,
+    [state.diaries],
+  );
+
   const login = useCallback((userId: string) => {
     setState((current) => ({
       ...current,
@@ -102,44 +127,103 @@ export function DayDropProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
-  const updateProfile = useCallback(
-    (input: Pick<User, "name" | "handle" | "bio">) => {
-      setState((current) => {
-        if (!current.currentUser) {
-          return current;
-        }
-
-        const users = current.users.map((user) =>
-          user.id === current.currentUser?.id ? { ...user, ...input } : user,
-        );
-
-        return {
-          ...current,
-          users,
-          currentUser:
-            users.find((user) => user.id === current.currentUser?.id) ?? null,
-        };
-      });
-    },
-    [],
-  );
-
-  const createDiary = useCallback((draft: DraftDiary) => {
-    let createdDiary = initialState.diaries[0];
-
+  const updateProfile = useCallback((input: ProfileInput) => {
     setState((current) => {
       if (!current.currentUser) {
         return current;
       }
 
+      const users = current.users.map((user) =>
+        user.id === current.currentUser?.id ? { ...user, ...input } : user,
+      );
+
+      return {
+        ...current,
+        users,
+        currentUser:
+          users.find((user) => user.id === current.currentUser?.id) ?? null,
+      };
+    });
+  }, []);
+
+  const toggleFollow = useCallback((targetUserId: string) => {
+    setState((current) => {
+      const viewer = current.currentUser;
+      if (!viewer || viewer.id === targetUserId) {
+        return current;
+      }
+
+      const target = current.users.find((user) => user.id === targetUserId);
+      if (!target) {
+        return current;
+      }
+
+      const alreadyFollowing = viewer.following.includes(targetUserId);
+      const users = current.users.map((user) => {
+        if (user.id === viewer.id) {
+          return {
+            ...user,
+            following: alreadyFollowing
+              ? user.following.filter((id) => id !== targetUserId)
+              : [...user.following, targetUserId],
+          };
+        }
+
+        if (user.id === targetUserId) {
+          return {
+            ...user,
+            followers: alreadyFollowing
+              ? user.followers.filter((id) => id !== viewer.id)
+              : [...user.followers, viewer.id],
+          };
+        }
+
+        return user;
+      });
+
+      const notifications =
+        alreadyFollowing
+          ? current.notifications
+          : [
+              {
+                id: makeId("n"),
+                userId: targetUserId,
+                type: "followed" as const,
+                message: `${viewer.name}\u3055\u3093\u304c\u3042\u306a\u305f\u3092\u30d5\u30a9\u30ed\u30fc\u3057\u307e\u3057\u305f`,
+                createdAt: new Date().toISOString(),
+                read: false,
+                actorId: viewer.id,
+              },
+              ...current.notifications,
+            ];
+
+      return {
+        ...current,
+        users,
+        notifications,
+        currentUser: users.find((user) => user.id === viewer.id) ?? null,
+      };
+    });
+  }, []);
+
+  const createDiary = useCallback((draft: DraftDiary) => {
+    let createdDiary: Diary | null = null;
+
+    setState((current) => {
+      const viewer = current.currentUser;
+      if (!viewer || viewer.coinBalance < 30) {
+        return current;
+      }
+
       const diary: Diary = {
         id: makeId("d"),
-        authorId: current.currentUser.id,
+        authorId: viewer.id,
         title: draft.title,
         body: draft.body,
         imageUrl: draft.imageUrl,
         visibility: draft.visibility,
         recipientIds: draft.recipientIds,
+        tags: draft.tags ?? [],
         createdAt: new Date().toISOString(),
         likedBy: [],
         impressions: [],
@@ -151,34 +235,24 @@ export function DayDropProvider({ children }: { children: ReactNode }) {
         draft.visibility === "public"
           ? []
           : draft.visibility === "followers"
-            ? current.currentUser.followers
+            ? viewer.followers
             : draft.recipientIds;
 
       const deliveryNotifications: Notification[] = deliveryTargets.map(
         (userId) => ({
           id: makeId("n"),
           userId,
-          message: `${current.currentUser?.name}さんから日記が届いています`,
+          type: "diary_delivered",
+          message: `${viewer.name}\u3055\u3093\u304b\u3089\u65e5\u8a18\u304c\u5c4a\u3044\u3066\u3044\u307e\u3059`,
           createdAt: diary.createdAt,
           read: false,
           diaryId: diary.id,
+          actorId: viewer.id,
         }),
       );
 
-      const coinTransactions: CoinTransaction[] = [
-        ...current.coinTransactions,
-        {
-          id: makeId("c"),
-          userId: current.currentUser.id,
-          amount: -30,
-          reason: "diary_post",
-          createdAt: diary.createdAt,
-          relatedDiaryId: diary.id,
-        },
-      ];
-
       const users = current.users.map((user) =>
-        user.id === current.currentUser?.id
+        user.id === viewer.id
           ? { ...user, coinBalance: user.coinBalance - 30 }
           : user,
       );
@@ -186,11 +260,20 @@ export function DayDropProvider({ children }: { children: ReactNode }) {
       return {
         ...current,
         users,
-        currentUser:
-          users.find((user) => user.id === current.currentUser?.id) ?? null,
+        currentUser: users.find((user) => user.id === viewer.id) ?? null,
         diaries: [diary, ...current.diaries],
         notifications: [...deliveryNotifications, ...current.notifications],
-        coinTransactions,
+        coinTransactions: [
+          ...current.coinTransactions,
+          {
+            id: makeId("c"),
+            userId: viewer.id,
+            amount: -30,
+            reason: "diary_post",
+            createdAt: diary.createdAt,
+            relatedDiaryId: diary.id,
+          },
+        ],
       };
     });
 
@@ -198,8 +281,11 @@ export function DayDropProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const addImpression = useCallback((diaryId: string, body: string) => {
+    let created = false;
+
     setState((current) => {
-      if (!current.currentUser) {
+      const viewer = current.currentUser;
+      if (!viewer || viewer.coinBalance < 1) {
         return current;
       }
 
@@ -208,11 +294,12 @@ export function DayDropProvider({ children }: { children: ReactNode }) {
         return current;
       }
 
+      created = true;
       const createdAt = new Date().toISOString();
       const impression: Impression = {
         id: makeId("i"),
         diaryId,
-        authorId: current.currentUser.id,
+        authorId: viewer.id,
         body,
         createdAt,
       };
@@ -224,22 +311,24 @@ export function DayDropProvider({ children }: { children: ReactNode }) {
       );
 
       const notifications =
-        diary.authorId === current.currentUser.id
+        diary.authorId === viewer.id
           ? current.notifications
           : [
               {
                 id: makeId("n"),
                 userId: diary.authorId,
-                message: `${current.currentUser.name}さんから感想が届いています`,
+                type: "impression_received" as const,
+                message: `${viewer.name}\u3055\u3093\u304b\u3089\u611f\u60f3\u304c\u5c4a\u3044\u3066\u3044\u307e\u3059`,
                 createdAt,
                 read: false,
                 diaryId,
+                actorId: viewer.id,
               },
               ...current.notifications,
             ];
 
       const users = current.users.map((user) =>
-        user.id === current.currentUser?.id
+        user.id === viewer.id
           ? { ...user, coinBalance: user.coinBalance - 1 }
           : user,
       );
@@ -247,15 +336,14 @@ export function DayDropProvider({ children }: { children: ReactNode }) {
       return {
         ...current,
         users,
-        currentUser:
-          users.find((user) => user.id === current.currentUser?.id) ?? null,
+        currentUser: users.find((user) => user.id === viewer.id) ?? null,
         diaries,
         notifications,
         coinTransactions: [
           ...current.coinTransactions,
           {
             id: makeId("c"),
-            userId: current.currentUser.id,
+            userId: viewer.id,
             amount: -1,
             reason: "impression_post",
             createdAt,
@@ -264,11 +352,14 @@ export function DayDropProvider({ children }: { children: ReactNode }) {
         ],
       };
     });
+
+    return created;
   }, []);
 
   const toggleLike = useCallback((diaryId: string) => {
     setState((current) => {
-      if (!current.currentUser) {
+      const viewer = current.currentUser;
+      if (!viewer) {
         return current;
       }
 
@@ -277,19 +368,19 @@ export function DayDropProvider({ children }: { children: ReactNode }) {
         return current;
       }
 
-      const alreadyLiked = diary.likedBy.includes(current.currentUser.id);
+      const alreadyLiked = diary.likedBy.includes(viewer.id);
       const diaries = current.diaries.map((item) =>
         item.id === diaryId
           ? {
               ...item,
               likedBy: alreadyLiked
-                ? item.likedBy.filter((id) => id !== current.currentUser?.id)
-                : [...item.likedBy, current.currentUser?.id ?? ""],
+                ? item.likedBy.filter((id) => id !== viewer.id)
+                : [...item.likedBy, viewer.id],
             }
           : item,
       );
 
-      const shouldReward = !alreadyLiked && diary.authorId !== current.currentUser.id;
+      const shouldReward = !alreadyLiked && diary.authorId !== viewer.id;
       const users = current.users.map((user) =>
         shouldReward && user.id === diary.authorId
           ? { ...user, coinBalance: user.coinBalance + 1 }
@@ -299,8 +390,7 @@ export function DayDropProvider({ children }: { children: ReactNode }) {
       return {
         ...current,
         users,
-        currentUser:
-          users.find((user) => user.id === current.currentUser?.id) ?? null,
+        currentUser: users.find((user) => user.id === viewer.id) ?? null,
         diaries,
         coinTransactions: shouldReward
           ? [
@@ -354,6 +444,35 @@ export function DayDropProvider({ children }: { children: ReactNode }) {
     });
   }, [getUser, state.currentUser, state.diaries]);
 
+  const searchDiaries = useCallback(
+    (query: string, tag?: string) => {
+      const normalizedQuery = query.trim().toLowerCase();
+      return getVisibleDiaries().filter((diary) => {
+        const matchesQuery =
+          !normalizedQuery ||
+          diary.title.toLowerCase().includes(normalizedQuery) ||
+          diary.body.toLowerCase().includes(normalizedQuery);
+        const matchesTag = !tag || diary.tags.includes(tag);
+        return matchesQuery && matchesTag;
+      });
+    },
+    [getVisibleDiaries],
+  );
+
+  const searchUsers = useCallback(
+    (query: string) => {
+      const normalizedQuery = query.trim().toLowerCase();
+      return state.users.filter(
+        (user) =>
+          !normalizedQuery ||
+          user.name.toLowerCase().includes(normalizedQuery) ||
+          user.handle.toLowerCase().includes(normalizedQuery) ||
+          user.title.toLowerCase().includes(normalizedQuery),
+      );
+    },
+    [state.users],
+  );
+
   const value = useMemo<DayDropContextValue>(
     () => ({
       ...state,
@@ -362,9 +481,13 @@ export function DayDropProvider({ children }: { children: ReactNode }) {
       createDiary,
       addImpression,
       toggleLike,
+      toggleFollow,
       markNotificationRead,
       getUser,
       getVisibleDiaries,
+      getDiaryCount,
+      searchDiaries,
+      searchUsers,
     }),
     [
       state,
@@ -373,9 +496,13 @@ export function DayDropProvider({ children }: { children: ReactNode }) {
       createDiary,
       addImpression,
       toggleLike,
+      toggleFollow,
       markNotificationRead,
       getUser,
       getVisibleDiaries,
+      getDiaryCount,
+      searchDiaries,
+      searchUsers,
     ],
   );
 
