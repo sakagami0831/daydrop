@@ -41,6 +41,7 @@ type DayDropState = {
   notifications: Notification[];
   coinTransactions: CoinTransaction[];
   dailyReads: Record<string, string[]>;
+  dailyClaims: Record<string, string[]>;
   purchasedShopItemIds: Record<string, string[]>;
   currentUser: User | null;
 };
@@ -55,6 +56,7 @@ type DayDropContextValue = DayDropState & {
   markNotificationRead: (notificationId: string) => void;
   markDiaryRead: (diaryId: string) => void;
   claimDailyBonus: () => boolean;
+  claimDailyMission: (missionId: string, reward: number) => boolean;
   purchaseShopItem: (itemId: string, price: number) => boolean;
   getUser: (userId: string) => User | undefined;
   getVisibleDiaries: () => Diary[];
@@ -63,7 +65,7 @@ type DayDropContextValue = DayDropState & {
   searchUsers: (query: string) => User[];
 };
 
-const storageKey = "daydrop-mvp-audit-state";
+const storageKey = "daydrop-streamer-exchange-state";
 const DayDropContext = createContext<DayDropContextValue | null>(null);
 
 const initialState: DayDropState = {
@@ -72,6 +74,7 @@ const initialState: DayDropState = {
   notifications: seedNotifications,
   coinTransactions: seedCoinTransactions,
   dailyReads: {},
+  dailyClaims: {},
   purchasedShopItemIds: {},
   currentUser: seedUsers[0],
 };
@@ -84,6 +87,7 @@ const toDayKey = (date = new Date()) => date.toISOString().slice(0, 10);
 const normalizeState = (state: DayDropState): DayDropState => ({
   ...state,
   dailyReads: state.dailyReads ?? {},
+  dailyClaims: state.dailyClaims ?? {},
   purchasedShopItemIds: state.purchasedShopItemIds ?? {},
   diaries: state.diaries.map((diary) => ({
     ...diary,
@@ -458,21 +462,15 @@ export function DayDropProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const claimDailyBonus = useCallback(() => {
-    const today = toDayKey();
+  const claimDailyMission = useCallback((missionId: string, reward: number) => {
     const viewer = state.currentUser;
-    if (!viewer) {
+    if (!viewer || reward <= 0) {
       return false;
     }
 
-    const alreadyClaimed = state.coinTransactions.some(
-      (transaction) =>
-        transaction.userId === viewer.id &&
-        transaction.reason === "daily_reward" &&
-        toDayKey(new Date(transaction.createdAt)) === today,
-    );
-
-    if (alreadyClaimed) {
+    const key = `${viewer.id}:${toDayKey()}`;
+    const claimed = state.dailyClaims[key] ?? [];
+    if (claimed.includes(missionId)) {
       return false;
     }
 
@@ -482,10 +480,16 @@ export function DayDropProvider({ children }: { children: ReactNode }) {
         return current;
       }
 
+      const claimKey = `${viewer.id}:${toDayKey()}`;
+      const currentClaims = current.dailyClaims[claimKey] ?? [];
+      if (currentClaims.includes(missionId)) {
+        return current;
+      }
+
       const createdAt = new Date().toISOString();
       const users = current.users.map((user) =>
         user.id === viewer.id
-          ? { ...user, coinBalance: user.coinBalance + 10 }
+          ? { ...user, coinBalance: user.coinBalance + reward }
           : user,
       );
 
@@ -493,12 +497,16 @@ export function DayDropProvider({ children }: { children: ReactNode }) {
         ...current,
         users,
         currentUser: users.find((user) => user.id === viewer.id) ?? null,
+        dailyClaims: {
+          ...current.dailyClaims,
+          [claimKey]: [...currentClaims, missionId],
+        },
         coinTransactions: [
           ...current.coinTransactions,
           {
             id: makeId("c"),
             userId: viewer.id,
-            amount: 10,
+            amount: reward,
             reason: "daily_reward",
             createdAt,
           },
@@ -507,7 +515,12 @@ export function DayDropProvider({ children }: { children: ReactNode }) {
     });
 
     return true;
-  }, [state.coinTransactions, state.currentUser]);
+  }, [state.currentUser, state.dailyClaims]);
+
+  const claimDailyBonus = useCallback(
+    () => claimDailyMission("login", 10),
+    [claimDailyMission],
+  );
 
   const purchaseShopItem = useCallback((itemId: string, price: number) => {
     const viewer = state.currentUser;
@@ -630,6 +643,7 @@ export function DayDropProvider({ children }: { children: ReactNode }) {
       markNotificationRead,
       markDiaryRead,
       claimDailyBonus,
+      claimDailyMission,
       purchaseShopItem,
       getUser,
       getVisibleDiaries,
@@ -648,6 +662,7 @@ export function DayDropProvider({ children }: { children: ReactNode }) {
       markNotificationRead,
       markDiaryRead,
       claimDailyBonus,
+      claimDailyMission,
       purchaseShopItem,
       getUser,
       getVisibleDiaries,

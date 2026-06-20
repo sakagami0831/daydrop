@@ -8,42 +8,42 @@ const shopItems = [
   {
     id: "theme-lavender",
     name: "\u30e9\u30d9\u30f3\u30c0\u30fc\u30c6\u30fc\u30de",
-    price: 30,
+    price: 80,
     kind: "\u30c6\u30fc\u30de",
     tone: "bg-[#f2efff]",
   },
   {
     id: "theme-sakura",
     name: "\u685c\u30c6\u30fc\u30de",
-    price: 30,
+    price: 120,
     kind: "\u30c6\u30fc\u30de",
     tone: "bg-[#fff1f6]",
   },
   {
     id: "theme-cloud",
     name: "\u96f2\u30c6\u30fc\u30de",
-    price: 30,
+    price: 100,
     kind: "\u30c6\u30fc\u30de",
     tone: "bg-[#f2f8ff]",
   },
   {
     id: "theme-notebook",
     name: "\u65e5\u8a18\u5e33\u30c6\u30fc\u30de",
-    price: 40,
+    price: 100,
     kind: "\u30c6\u30fc\u30de",
     tone: "bg-[#fff9ed]",
   },
   {
     id: "header-streamer",
     name: "\u914d\u4fe1\u8005\u5411\u3051\u30d8\u30c3\u30c0\u30fc",
-    price: 50,
+    price: 150,
     kind: "\u30d8\u30c3\u30c0\u30fc",
     tone: "bg-[#eef7ff]",
   },
   {
     id: "header-event",
     name: "\u30a4\u30d9\u30f3\u30c8\u544a\u77e5\u30d8\u30c3\u30c0\u30fc",
-    price: 50,
+    price: 200,
     kind: "\u30d8\u30c3\u30c0\u30fc",
     tone: "bg-[#f4fff5]",
   },
@@ -63,8 +63,8 @@ export default function ShopPage() {
     const ok = purchaseShopItem(itemId, price);
     setMessage(
       ok
-        ? "\u8cfc\u5165\u3057\u307e\u3057\u305f\u3002localStorage\u306b\u4fdd\u5b58\u3055\u308c\u3066\u3044\u307e\u3059\u3002"
-        : "\u8cfc\u5165\u3067\u304d\u307e\u305b\u3093\u3067\u3057\u305f\u3002\u30b3\u30a4\u30f3\u6b8b\u9ad8\u304b\u8cfc\u5165\u6e08\u307f\u72b6\u614b\u3092\u78ba\u8a8d\u3057\u3066\u304f\u3060\u3055\u3044\u3002",
+        ? "\u88c5\u98fe\u3092\u53d7\u3051\u53d6\u308a\u307e\u3057\u305f\u3002\u8cfc\u5165\u72b6\u614b\u3092localStorage\u306b\u4fdd\u5b58\u3057\u307e\u3059\u3002"
+        : "\u53d7\u3051\u53d6\u308c\u307e\u305b\u3093\u3067\u3057\u305f\u3002\u30b3\u30a4\u30f3\u6b8b\u9ad8\u304b\u8cfc\u5165\u6e08\u307f\u72b6\u614b\u3092\u78ba\u8a8d\u3057\u3066\u304f\u3060\u3055\u3044\u3002",
     );
   };
 
@@ -81,7 +81,7 @@ export default function ShopPage() {
                 {"\u30b3\u30a4\u30f3\u3067\u88c5\u98fe\u3092\u53d7\u3051\u53d6\u308b"}
               </h1>
               <p className="mt-1 text-sm leading-6 text-[#746d82]">
-                {"MVP\u6bb5\u968e\u3067\u306f\u8ab2\u91d1\u306a\u3057\u3002\u6240\u6301\u30b3\u30a4\u30f3\u3060\u3051\u3067\u8cfc\u5165\u72b6\u614b\u3092\u4fdd\u5b58\u3057\u307e\u3059\u3002"}
+                {"MVP\u6bb5\u968e\u3067\u306f\u6240\u6301\u30b3\u30a4\u30f3\u3060\u3051\u3067\u88c5\u98fe\u3092\u96c6\u3081\u3089\u308c\u307e\u3059\u3002"}
               </p>
             </div>
             <span className="rounded-full bg-[#f2efff] px-3 py-1 text-xs font-black text-[#7c6ee6]">
@@ -125,7 +125,7 @@ export default function ShopPage() {
                   {owned
                     ? "\u8cfc\u5165\u6e08\u307f"
                     : affordable
-                      ? "\u8cfc\u5165\u3059\u308b"
+                      ? "\u53d7\u3051\u53d6\u308b"
                       : "\u30b3\u30a4\u30f3\u4e0d\u8db3"}
                 </button>
               </article>

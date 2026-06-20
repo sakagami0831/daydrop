@@ -14,7 +14,13 @@ const tabs = [
 ];
 
 export default function Home() {
-  const { currentUser, diaries: allDiaries, searchDiaries, notifications } = useDayDrop();
+  const {
+    currentUser,
+    diaries: allDiaries,
+    searchDiaries,
+    notifications,
+    getUser,
+  } = useDayDrop();
   const [query, setQuery] = useState("");
   const diaries = searchDiaries(query);
   const deliveredDiaries = currentUser
@@ -26,6 +32,10 @@ export default function Home() {
     return created.toDateString() === today.toDateString();
   });
   const deliveryCount = todayDelivered.length;
+  const deliveredPreview = (todayDelivered.length > 0
+    ? todayDelivered
+    : deliveredDiaries
+  ).slice(0, 8);
   const unreadCount = currentUser
     ? notifications.filter(
         (notification) => notification.userId === currentUser.id && !notification.read,
@@ -58,7 +68,7 @@ export default function Home() {
           </div>
         </header>
 
-        <section className="rounded-2xl border border-[#ece7fb] bg-white/90 p-3 shadow-[0_10px_26px_rgba(126,112,174,0.08)]">
+        <section className="overflow-hidden rounded-2xl border border-[#ece7fb] bg-white/90 p-3 shadow-[0_10px_26px_rgba(126,112,174,0.08)]">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-xs font-black text-[#8b7cf6]">
@@ -67,17 +77,53 @@ export default function Home() {
               <h2 className="text-lg font-black">
                 {deliveryCount > 0
                   ? `${deliveryCount}\u4ef6\u306e\u65e5\u8a18\u304c\u5c4a\u3044\u3066\u3044\u307e\u3059`
-                  : "\u4eca\u65e5\u306f\u307e\u3060\u65e5\u8a18\u304c\u5c4a\u3044\u3066\u3044\u307e\u305b\u3093"}
+                  : "\u63a8\u3057\u304b\u3089\u5c4a\u3044\u305f\u65e5\u8a18\u3092\u8aad\u3082\u3046"}
               </h2>
             </div>
-            {todayDelivered[0] ? (
-              <a
-                href={`/diary/${todayDelivered[0].id}`}
-                className="rounded-full bg-[#8b7cf6] px-4 py-2 text-xs font-black text-white"
-              >
-                {"\u6700\u65b0\u306e\u65e5\u8a18\u3092\u8aad\u3080"}
-              </a>
-            ) : null}
+            <span className="rounded-full bg-[#f2efff] px-3 py-1 text-xs font-black text-[#7c6ee6]">
+              {"\u672a\u8aad"} {unreadCount}
+            </span>
+          </div>
+
+          <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+            {(deliveredPreview.length > 0 ? deliveredPreview : allDiaries.slice(0, 4)).map(
+              (diary) => {
+                const author = getUser(diary.authorId);
+                const unread = notifications.some(
+                  (notification) =>
+                    notification.userId === currentUser?.id &&
+                    notification.diaryId === diary.id &&
+                    !notification.read,
+                );
+
+                return (
+                  <a
+                    key={diary.id}
+                    href={`/diary/${diary.id}`}
+                    className="min-w-[210px] rounded-2xl border border-[#ece7fb] bg-[#fbfaff] p-3 transition hover:bg-white"
+                  >
+                    <div className="mb-2 flex items-center justify-between gap-2">
+                      <span className="truncate text-xs font-black text-[#7c6ee6]">
+                        {author?.name ?? "Unknown"}
+                        {"\u3055\u3093\u304b\u3089"}
+                      </span>
+                      {unread ? (
+                        <span className="rounded-full bg-[#ffedf5] px-2 py-0.5 text-[10px] font-black text-[#c05a86]">
+                          {"\u672a\u8aad"}
+                        </span>
+                      ) : (
+                        <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-black text-[#9b94aa]">
+                          {"\u65e5\u8a18"}
+                        </span>
+                      )}
+                    </div>
+                    <p className="line-clamp-2 text-sm font-black leading-5 text-[#2f2b3b]">
+                      {diary.title}
+                    </p>
+                  </a>
+                );
+              },
+            )}
           </div>
         </section>
 
@@ -109,7 +155,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="grid grid-cols-1 justify-center gap-3 sm:grid-cols-[repeat(2,minmax(220px,280px))] lg:justify-start xl:grid-cols-[repeat(3,minmax(220px,280px))] 2xl:grid-cols-[repeat(4,minmax(220px,280px))]">
+        <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
           {diaries.length === 0 ? (
             <p className="rounded-2xl border border-[#ece7fb] bg-white p-4 text-sm text-[#9b94aa] shadow-sm sm:col-span-2 xl:col-span-3">
               {"\u307e\u3060\u5c4a\u3044\u3066\u3044\u308b\u65e5\u8a18\u306f\u3042\u308a\u307e\u305b\u3093\u3002"}

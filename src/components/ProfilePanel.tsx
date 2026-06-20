@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { useDayDrop } from "@/lib/store";
 
@@ -7,6 +8,7 @@ export function ProfilePanel() {
   const {
     currentUser,
     users,
+    purchasedShopItemIds,
     updateProfile,
     toggleFollow,
     getDiaryCount,
@@ -23,6 +25,18 @@ export function ProfilePanel() {
   }
 
   const otherUsers = users.filter((user) => user.id !== currentUser.id);
+  const purchased = purchasedShopItemIds[currentUser.id] ?? [];
+  const headerClass = purchased.includes("header-event")
+    ? "bg-[linear-gradient(135deg,#fff1f6,#f2efff_45%,#f4fff5)]"
+    : purchased.includes("header-streamer")
+      ? "bg-[linear-gradient(135deg,#eef7ff,#f2efff_55%,#fff7fb)]"
+      : purchased.includes("theme-sakura")
+        ? "bg-[linear-gradient(135deg,#fff1f6,#fff8fb_55%,#f2efff)]"
+        : purchased.includes("theme-cloud")
+          ? "bg-[linear-gradient(135deg,#eef7ff,#fbfaff_55%,#ffffff)]"
+          : purchased.includes("theme-notebook")
+            ? "bg-[linear-gradient(135deg,#fff9ed,#ffffff_55%,#f2efff)]"
+            : "bg-[linear-gradient(135deg,#f0edff,#fff3f8_55%,#eef7ff)]";
 
   const save = () => {
     updateProfile({
@@ -41,7 +55,7 @@ export function ProfilePanel() {
   return (
     <div className="grid gap-3">
       <section className="overflow-hidden rounded-2xl border border-[#ece7fb] bg-white shadow-[0_10px_28px_rgba(126,112,174,0.10)]">
-        <div className="h-14 bg-[linear-gradient(135deg,#f0edff,#fff3f8_55%,#eef7ff)]" />
+        <div className={`h-14 ${headerClass}`} />
         <div className="-mt-7 px-4 pb-4">
           <div className="flex items-end justify-between gap-2">
             <div className="grid size-14 place-items-center rounded-full border-4 border-white bg-[#f4efff] text-xl font-black text-[#8b7cf6] shadow-sm">
@@ -137,15 +151,17 @@ export function ProfilePanel() {
           <div>
             <h3 className="text-sm font-black">{"\u9650\u5b9a\u30d8\u30c3\u30c0\u30fc"}</h3>
             <p className="mt-1 text-xs leading-5 text-[#746d82]">
-              {"\u30b7\u30e7\u30c3\u30d7\u306f\u6e96\u5099\u4e2d\u3067\u3059\u3002"}
+              {purchased.length > 0
+                ? "\u8cfc\u5165\u6e08\u307f\u306e\u88c5\u98fe\u3092\u30d7\u30ed\u30d5\u30a3\u30fc\u30eb\u306b\u7c21\u6613\u53cd\u6620\u4e2d\u3067\u3059\u3002"
+                : "\u30b7\u30e7\u30c3\u30d7\u3067\u30d8\u30c3\u30c0\u30fc\u3084\u30c6\u30fc\u30de\u3092\u96c6\u3081\u3089\u308c\u307e\u3059\u3002"}
             </p>
           </div>
-          <button
-            onClick={showPreparing}
+          <Link
+            href="/shop"
             className="shrink-0 rounded-full bg-[#8b7cf6] px-3 py-1.5 text-[11px] font-black text-white"
           >
             {"\u30b7\u30e7\u30c3\u30d7"}
-          </button>
+          </Link>
         </div>
       </section>
 

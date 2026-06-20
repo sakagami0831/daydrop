@@ -21,18 +21,18 @@ export function DiaryCard({ diary }: { diary: Diary }) {
     fallbackGradients.length;
 
   return (
-    <article className="overflow-hidden rounded-2xl border border-[#ece7fb] bg-white shadow-[0_10px_20px_rgba(126,112,174,0.08)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_28px_rgba(126,112,174,0.12)]">
+    <article className="flex h-full flex-col overflow-hidden rounded-2xl border border-[#ece7fb] bg-white shadow-[0_10px_20px_rgba(126,112,174,0.08)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_28px_rgba(126,112,174,0.12)]">
       <Link href={`/diary/${diary.id}`} className="block">
         {diary.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={diary.imageUrl}
             alt=""
-            className="aspect-square w-full object-cover"
+            className="aspect-[4/3] w-full object-cover"
           />
         ) : (
           <div
-            className={`flex aspect-square w-full items-center justify-center bg-gradient-to-br ${fallbackGradients[fallbackIndex]}`}
+            className={`flex aspect-[4/3] w-full items-center justify-center bg-gradient-to-br ${fallbackGradients[fallbackIndex]}`}
           >
             <span className="rounded-full bg-white/75 px-3 py-1 text-xs font-black text-[#8b7cf6]">
               {"\u914d\u4fe1\u30ec\u30dd\u30fc\u30c8"}
@@ -41,25 +41,26 @@ export function DiaryCard({ diary }: { diary: Diary }) {
         )}
       </Link>
 
-      <div className="p-2.5">
+      <div className="flex flex-1 flex-col p-3">
         <Link href={`/diary/${diary.id}`} className="block">
-          <div className="mb-1.5 flex items-center justify-between gap-1.5">
-            <span className="min-w-0 truncate rounded-full bg-[#f0edff] px-2 py-0.5 text-[10px] font-black text-[#7c6ee6]">
-              {deliveryLabel}
+          <div className="mb-2 flex items-center justify-between gap-1.5">
+            <span className="min-w-0 truncate rounded-full bg-[#f0edff] px-2.5 py-1 text-[11px] font-black text-[#7c6ee6]">
+              {author?.name ?? "Unknown"}
+              {"\u3055\u3093\u304b\u3089\u5c4a\u3044\u305f"}
             </span>
             <span className="shrink-0 rounded-full bg-[#fff7fb] px-2 py-0.5 text-[10px] font-black text-[#b86f9a]">
-              {"\u304a\u77e5\u3089\u305b\u65e5\u8a18"}
+              {deliveryLabel}
             </span>
           </div>
-          <h3 className="line-clamp-2 min-h-9 text-sm font-black leading-[18px] text-[#2f2b3b]">
+          <h3 className="line-clamp-2 min-h-10 text-base font-black leading-5 text-[#2f2b3b]">
             {diary.title}
           </h3>
-          <p className="mt-0.5 line-clamp-1 text-[11px] leading-4 text-[#746d82]">
+          <p className="mt-1.5 line-clamp-3 min-h-14 text-xs leading-[18px] text-[#746d82]">
             {diary.body}
           </p>
         </Link>
 
-        <div className="mt-2 flex items-center justify-between gap-2">
+        <div className="mt-auto flex items-center justify-between gap-2 pt-3">
           <div className="flex min-w-0 items-center gap-1.5">
             <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[#f0edff] text-[11px] font-black text-[#8b7cf6]">
               {author?.avatar ?? "?"}
