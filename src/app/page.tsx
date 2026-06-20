@@ -20,11 +20,24 @@ export default function Home() {
     searchDiaries,
     notifications,
     getUser,
+    mutedUserIds,
+    blockedUserIds,
+    hiddenDiaryIds,
   } = useDayDrop();
   const [query, setQuery] = useState("");
-  const diaries = searchDiaries(query);
+  const hidden = currentUser ? hiddenDiaryIds[currentUser.id] ?? [] : [];
+  const muted = currentUser ? mutedUserIds[currentUser.id] ?? [] : [];
+  const blocked = currentUser ? blockedUserIds[currentUser.id] ?? [] : [];
+  const diaries = searchDiaries(query).filter(
+    (diary) => !muted.includes(diary.authorId),
+  );
   const deliveredDiaries = currentUser
-    ? getDeliveredDiariesForUser(allDiaries, currentUser.id)
+    ? getDeliveredDiariesForUser(allDiaries, currentUser.id).filter(
+        (diary) =>
+          !hidden.includes(diary.id) &&
+          !blocked.includes(diary.authorId) &&
+          !muted.includes(diary.authorId),
+      )
     : [];
   const todayDelivered = deliveredDiaries.filter((diary) => {
     const created = new Date(diary.createdAt);
