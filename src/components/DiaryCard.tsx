@@ -12,7 +12,7 @@ const fallbackGradients = [
 ];
 
 export function DiaryCard({ diary }: { diary: Diary }) {
-  const { currentUser, users, getUser, toggleLike } = useDayDrop();
+  const { currentUser, users, getUser, toggleLike, hideDiary } = useDayDrop();
   const author = getUser(diary.authorId);
   const liked = currentUser ? diary.likedBy.includes(currentUser.id) : false;
   const deliveryLabel = getDeliveryLabel(diary, users);
@@ -98,6 +98,12 @@ export function DiaryCard({ diary }: { diary: Diary }) {
             {"\u4ef6"}
           </span>
         </Link>
+        <button
+          onClick={() => hideDiary(diary.id)}
+          className="mt-2 w-full rounded-full border border-[#ece7fb] bg-white px-3 py-1.5 text-[11px] font-black text-[#9b94aa]"
+        >
+          {"\u3053\u306e\u65e5\u8a18\u3092\u975e\u8868\u793a"}
+        </button>
       </div>
     </article>
   );
