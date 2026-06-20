@@ -115,7 +115,7 @@ export const seedNotifications: Notification[] = [
     id: "n-2",
     userId: "u-me",
     type: "diary_delivered",
-    message: "\u306f\u308b\u3055\u3093\u304b\u3089\u65e5\u8a18\u304c\u5c4a\u3044\u3066\u3044\u307e\u3059",
+    message: "\u306f\u308b\u3055\u3093\u304b\u3089\u4eca\u65e5\u306e\u65e5\u8a18\u304c\u5c4a\u304d\u307e\u3057\u305f",
     createdAt: "2026-06-17T12:45:00.000Z",
     read: false,
     diaryId: "d-2",
