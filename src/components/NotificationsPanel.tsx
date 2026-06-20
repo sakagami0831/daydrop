@@ -42,7 +42,11 @@ export function NotificationsPanel({ compact = false }: { compact?: boolean }) {
               key={notification.id}
               href={notification.diaryId ? `/diary/${notification.diaryId}` : "/mypage"}
               onClick={() => markNotificationRead(notification.id)}
-              className="block rounded-2xl bg-[#fbfaff] px-3 py-2.5 text-sm leading-6"
+              className={`block rounded-2xl border px-3 py-2.5 text-sm leading-6 ${
+                notification.read
+                  ? "border-transparent bg-[#fbfaff]"
+                  : "border-[#cfc7ff] bg-[#f3f0ff]"
+              }`}
             >
               <span className="mb-1 inline-flex rounded-full bg-white px-2 py-0.5 text-[11px] font-black text-[#7c6ee6]">
                 {notificationLabel[notification.type]}
