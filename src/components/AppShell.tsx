@@ -42,18 +42,52 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-[#fbfaff] text-[#363142]">
       <div className="mx-auto grid max-w-[1500px] grid-cols-1 gap-3 px-3 pb-24 pt-3 lg:grid-cols-[190px_minmax(0,1fr)] lg:px-4 lg:pb-3">
-        <aside className="hidden lg:sticky lg:top-3 lg:block lg:h-[calc(100vh-1.5rem)]">
-          <div className="flex h-full flex-col rounded-2xl border border-[#ece7fb] bg-white/90 p-3 shadow-[0_10px_28px_rgba(126,112,174,0.10)]">
-            <Link href="/" className="mb-3 block px-1">
-              <p className="font-serif text-3xl font-black tracking-wide text-[#9b8be8]">
+        <aside className="hidden lg:sticky lg:top-0 lg:block lg:h-screen lg:overflow-y-auto">
+          <div className="flex min-h-screen flex-col rounded-2xl border border-[#ece7fb] bg-white/90 p-2.5 pb-8 shadow-[0_10px_28px_rgba(126,112,174,0.10)]">
+            <Link href="/" className="mb-2 block px-1">
+              <p className="font-serif text-2xl font-black tracking-wide text-[#9b8be8]">
                 DayDrop
               </p>
-              <p className="text-xs font-bold text-[#b9addd]">
+              <p className="text-[11px] font-bold text-[#b9addd]">
                 {"\u3067\u3044\u3069\u308d"}
               </p>
             </Link>
 
-            <nav className="grid gap-1">
+            <div className="sticky top-0 z-10 mb-2 grid gap-1.5 bg-white/95 pb-2">
+              <div className="rounded-xl border border-[#f0eafb] bg-white p-2.5 shadow-sm">
+                <label className="text-[11px] font-bold text-[#a6a0b7]">
+                  {"\u30e6\u30fc\u30b6\u30fc\u5207\u66ff"}
+                </label>
+                <select
+                  value={currentUser.id}
+                  onChange={(event) => login(event.target.value)}
+                  className="mt-1.5 w-full rounded-xl border border-[#ece7fb] bg-[#fbfaff] px-2 py-1 text-xs font-bold outline-none"
+                >
+                  {users.map((user) => (
+                    <option key={user.id} value={user.id}>
+                      {user.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <Link
+                href="/shop"
+                className="block rounded-xl border border-[#f0eafb] bg-white p-2.5 shadow-sm transition hover:border-[#d8cffb] hover:bg-[#fbfaff]"
+              >
+                <div className="flex items-center justify-between">
+                  <p className="text-[11px] font-bold text-[#a6a0b7]">
+                    {"\u6240\u6301\u30b3\u30a4\u30f3"}
+                  </p>
+                  <p className="text-sm font-black">C {currentUser.coinBalance}</p>
+                </div>
+                <span className="mt-1.5 block w-full rounded-full bg-[#f2efff] px-3 py-1 text-center text-[11px] font-black text-[#7c6ee6]">
+                  {"\u30b3\u30a4\u30f3\u3092\u8ffd\u52a0"}
+                </span>
+              </Link>
+            </div>
+
+            <nav className="grid gap-0.5">
               {navItems.map((item) => {
                 const active = pathname === item.href && !item.pending;
                 return (
@@ -66,13 +100,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                         setNotice("\u3053\u306e\u6a5f\u80fd\u306f\u6e96\u5099\u4e2d\u3067\u3059\u3002");
                       }
                     }}
-                    className={`flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold transition ${
+                    className={`flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-[13px] font-bold transition ${
                       active
                         ? "bg-[#f0edff] text-[#7c6ee6]"
                         : "text-[#6f6a7e] hover:bg-[#faf8ff] hover:text-[#7c6ee6]"
                     }`}
                   >
-                    <span className="grid size-6 place-items-center rounded-lg border border-[#e7e1fb] text-[11px] font-black leading-none">
+                    <span className="grid size-5 place-items-center rounded-md border border-[#e7e1fb] text-[10px] font-black leading-none">
                       {item.icon}
                     </span>
                     {item.label}
@@ -81,47 +115,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               })}
             </nav>
 
-            <div className="mt-auto grid gap-2">
-              <div className="rounded-xl border border-[#f0eafb] bg-white p-3 shadow-sm">
-                <label className="text-xs font-bold text-[#a6a0b7]">
-                  {"\u30e6\u30fc\u30b6\u30fc\u5207\u66ff"}
-                </label>
-                <select
-                  value={currentUser.id}
-                  onChange={(event) => login(event.target.value)}
-                  className="mt-2 w-full rounded-xl border border-[#ece7fb] bg-[#fbfaff] px-2 py-1.5 text-xs font-bold outline-none"
-                >
-                  {users.map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <Link
-                href="/shop"
-                className="block rounded-xl border border-[#f0eafb] bg-white p-3 shadow-sm transition hover:border-[#d8cffb] hover:bg-[#fbfaff]"
-              >
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-bold text-[#a6a0b7]">
-                    {"\u6240\u6301\u30b3\u30a4\u30f3"}
-                  </p>
-                  <p className="font-black">C {currentUser.coinBalance}</p>
-                </div>
-                <span className="mt-2 block w-full rounded-full bg-[#f2efff] px-3 py-1.5 text-center text-xs font-black text-[#7c6ee6]">
-                  {"\u30b3\u30a4\u30f3\u3092\u8ffd\u52a0"}
-                </span>
-              </Link>
-
+            <div className="mt-2 grid gap-1.5">
               <Link
                 href="/compose"
-                className="rounded-full bg-[#8b7cf6] px-4 py-2.5 text-center text-sm font-black text-white shadow-[0_10px_20px_rgba(139,124,246,0.24)]"
+                className="rounded-full bg-[#8b7cf6] px-4 py-2 text-center text-sm font-black text-white shadow-[0_10px_20px_rgba(139,124,246,0.24)]"
               >
                 {"\u65e5\u8a18\u3092\u66f8\u304f"}
               </Link>
 
-              <div className="rounded-xl border border-[#f0eafb] bg-white p-3 text-xs leading-5 shadow-sm">
+              <div className="rounded-xl border border-[#f0eafb] bg-white p-2.5 text-[11px] leading-5 shadow-sm">
                 <p className="font-black text-[#7c6ee6]">
                   {"\u4f7f\u3044\u65b9\u30ac\u30a4\u30c9"}
                 </p>
