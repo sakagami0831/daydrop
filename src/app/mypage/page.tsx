@@ -29,6 +29,12 @@ const achievementItems = [
     check: (stats: ProfileStats) => stats.impressionCount >= 10,
   },
   {
+    id: "like-10",
+    label: "\u3044\u3044\u306d10\u4ef6\u9054\u6210",
+    title: "\u5fdc\u63f4\u3042\u308a\u304c\u3068\u3046",
+    check: (stats: ProfileStats) => stats.likeCount >= 10,
+  },
+  {
     id: "followers-5",
     label: "\u30d5\u30a9\u30ed\u30ef\u30fc5\u4eba\u9054\u6210",
     title: "\u6df1\u591c\u96d1\u8ac7\u30de\u30b9\u30bf\u30fc",
@@ -40,6 +46,18 @@ const achievementItems = [
     title: "\u6bce\u65e5\u5c4a\u3051\u308b\u4eba",
     check: (stats: ProfileStats) => stats.loginStreak >= 7,
   },
+  {
+    id: "daily-first",
+    label: "\u30c7\u30a4\u30ea\u30fc\u521d\u9054\u6210",
+    title: "\u3067\u3044\u3069\u308d\u5e38\u9023",
+    check: (stats: ProfileStats) => stats.dailyClaimCount >= 1,
+  },
+  {
+    id: "shop-first",
+    label: "\u30b7\u30e7\u30c3\u30d7\u521d\u8cfc\u5165",
+    title: "\u98fe\u308a\u4ed8\u3051\u4e0a\u624b",
+    check: (stats: ProfileStats) => stats.shopPurchaseCount >= 1,
+  },
 ];
 
 type ProfileStats = {
@@ -49,6 +67,8 @@ type ProfileStats = {
   followerCount: number;
   followingCount: number;
   loginStreak: number;
+  dailyClaimCount: number;
+  shopPurchaseCount: number;
 };
 
 function getLoginStreak(userId: string, dailyClaims: Record<string, string[]>) {
@@ -68,7 +88,14 @@ function getLoginStreak(userId: string, dailyClaims: Record<string, string[]>) {
 }
 
 export default function MyPage() {
-  const { currentUser, diaries, dailyClaims, updateProfile } = useDayDrop();
+  const {
+    currentUser,
+    diaries,
+    dailyClaims,
+    purchasedShopItemIds,
+    equippedShopItemIds,
+    updateProfile,
+  } = useDayDrop();
   const [notice, setNotice] = useState("");
   const myDiaries = useMemo(
     () =>
@@ -95,8 +122,13 @@ export default function MyPage() {
         followerCount: 0,
         followingCount: 0,
         loginStreak: 0,
+        dailyClaimCount: 0,
+        shopPurchaseCount: 0,
       };
     }
+    const dailyClaimCount = Object.entries(dailyClaims)
+      .filter(([key]) => key.startsWith(`${currentUser.id}:`))
+      .reduce((sum, [, ids]) => sum + ids.length, 0);
 
     return {
       diaryCount: myDiaries.length,
@@ -105,8 +137,10 @@ export default function MyPage() {
       followerCount: currentUser.followers.length,
       followingCount: currentUser.following.length,
       loginStreak: getLoginStreak(currentUser.id, dailyClaims),
+      dailyClaimCount,
+      shopPurchaseCount: (purchasedShopItemIds[currentUser.id] ?? []).length,
     };
-  }, [currentUser, dailyClaims, myDiaries, myImpressions]);
+  }, [currentUser, dailyClaims, myDiaries, myImpressions, purchasedShopItemIds]);
 
   if (!currentUser) {
     return null;
@@ -119,6 +153,17 @@ export default function MyPage() {
   const unlockedTitles = achievements
     .filter((achievement) => achievement.unlocked)
     .map((achievement) => achievement.title);
+  const equipped = equippedShopItemIds[currentUser.id] ?? {};
+  const itemLabel = (itemId: string | undefined) => {
+    if (!itemId) {
+      return "\u672a\u88c5\u5099";
+    }
+    return itemId
+      .replace("theme-", "")
+      .replace("header-", "")
+      .replace("card-", "")
+      .replace("bg-", "");
+  };
 
   const selectTitle = (title: string) => {
     if (!unlockedTitles.includes(title)) {
@@ -170,7 +215,9 @@ export default function MyPage() {
               <ProfileMetric label={"\u30d5\u30a9\u30ed\u30ef\u30fc"} value={stats.followerCount} />
               <ProfileMetric label={"\u30d5\u30a9\u30ed\u30fc"} value={stats.followingCount} />
               <ProfileMetric label={"\u79f0\u53f7\u89e3\u653e"} value={unlockedTitles.length} />
-              <ProfileMetric label={"\u73fe\u5728\u306e\u4e8c\u3064\u540d"} value={currentUser.title} />
+              <ProfileMetric label={"\u73fe\u5728\u306e\u79f0\u53f7"} value={currentUser.title} />
+              <ProfileMetric label={"\u73fe\u5728\u306e\u30c6\u30fc\u30de"} value={itemLabel(equipped.theme)} />
+              <ProfileMetric label={"\u73fe\u5728\u306e\u30d8\u30c3\u30c0\u30fc"} value={itemLabel(equipped.header)} />
             </div>
           </section>
 

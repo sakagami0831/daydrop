@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   visibilityDescriptions,
   visibilityLabels,
   type Visibility,
 } from "@/lib/daydrop";
+import { findNgWord } from "@/lib/moderation";
 import { useDayDrop } from "@/lib/store";
 
 export function Composer() {
@@ -33,6 +35,7 @@ export function Composer() {
   const selectedRecipientNames = candidates
     .filter((user) => recipientIds.includes(user.id))
     .map((user) => user.name);
+  const coinShortage = error.includes("\u30b3\u30a4\u30f3\u304c\u4e0d\u8db3");
 
   const onImageChange = (file: File | undefined) => {
     if (!file) {
@@ -56,6 +59,12 @@ export function Composer() {
   const submit = () => {
     setError("");
     if (!title.trim() || !body.trim()) {
+      return;
+    }
+
+    const ngWord = findNgWord(`${title}\n${body}`);
+    if (ngWord) {
+      setError(`\u5b89\u5168\u306e\u305f\u3081\u300c${ngWord}\u300d\u3092\u542b\u3080\u65e5\u8a18\u306f\u5c4a\u3051\u3089\u308c\u307e\u305b\u3093\u3002`);
       return;
     }
 
@@ -235,9 +244,17 @@ export function Composer() {
           {"\u65e5\u8a18\u3092\u5c4a\u3051\u308b"}
         </button>
         {error ? (
-          <p className="rounded-2xl bg-[#fff7fa] px-3 py-2 text-xs font-bold text-[#b15b77]">
-            {error}
-          </p>
+          <div className="rounded-2xl bg-[#fff7fa] px-3 py-2 text-xs font-bold text-[#b15b77]">
+            <p>{error}</p>
+            {coinShortage ? (
+              <Link
+                href="/shop"
+                className="mt-2 inline-block rounded-full bg-white px-3 py-1 text-[#7c6ee6]"
+              >
+                {"\u30b3\u30a4\u30f3\u3092\u6e96\u5099\u3059\u308b"}
+              </Link>
+            ) : null}
+          </div>
         ) : null}
       </div>
     </section>

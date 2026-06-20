@@ -13,6 +13,7 @@ const navItems = [
   { label: "\u304a\u77e5\u3089\u305b", href: "/notifications", icon: "N" },
   { label: "\u30c7\u30a4\u30ea\u30fc", href: "/daily", icon: "D" },
   { label: "\u79f0\u53f7\u30fb\u5b9f\u7e3e", href: "/mypage", icon: "T" },
+  { label: "\u8a2d\u5b9a", href: "/settings", icon: "G" },
 ];
 
 const bottomNavItems = [

@@ -11,14 +11,24 @@ const notificationLabel: Record<Notification["type"], string> = {
 };
 
 export function NotificationsPanel({ compact = false }: { compact?: boolean }) {
-  const { currentUser, notifications, markNotificationRead } = useDayDrop();
+  const { currentUser, notifications, blockedUserIds, mutedUserIds, markNotificationRead } =
+    useDayDrop();
 
   if (!currentUser) {
     return null;
   }
 
   const myNotifications = notifications
-    .filter((notification) => notification.userId === currentUser.id)
+    .filter((notification) => {
+      const blocked = blockedUserIds[currentUser.id] ?? [];
+      const muted = mutedUserIds[currentUser.id] ?? [];
+      return (
+        notification.userId === currentUser.id &&
+        (!notification.actorId ||
+          (!blocked.includes(notification.actorId) &&
+            !muted.includes(notification.actorId)))
+      );
+    })
     .slice(0, compact ? 3 : undefined);
   const unreadCount = myNotifications.filter((notification) => !notification.read)
     .length;

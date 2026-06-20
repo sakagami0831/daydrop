@@ -45,13 +45,30 @@ export type Notification = {
   actorId?: string;
 };
 
+export type ReportReason =
+  | "inappropriate"
+  | "harassment"
+  | "impersonation"
+  | "personal_info"
+  | "other";
+
+export type SafetyReport = {
+  id: string;
+  reporterId: string;
+  targetType: "diary" | "impression";
+  targetId: string;
+  reason: ReportReason;
+  createdAt: string;
+};
+
 export type CoinTransactionReason =
   | "initial_bonus"
   | "diary_post"
   | "impression_post"
   | "daily_reward"
   | "like_received"
-  | "shop_purchase";
+  | "shop_purchase"
+  | "recommendation_application";
 
 export type CoinTransaction = {
   id: string;

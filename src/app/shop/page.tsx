@@ -27,6 +27,7 @@ const shopItems = [
     name: "\u30e9\u30d9\u30f3\u30c0\u30fc\u30c6\u30fc\u30de",
     price: 80,
     kind: "\u30c6\u30fc\u30de",
+    slot: "theme",
     tone: "bg-[#f2efff]",
   },
   {
@@ -34,6 +35,7 @@ const shopItems = [
     name: "\u685c\u30c6\u30fc\u30de",
     price: 120,
     kind: "\u30c6\u30fc\u30de",
+    slot: "theme",
     tone: "bg-[#fff1f6]",
   },
   {
@@ -41,6 +43,7 @@ const shopItems = [
     name: "\u96f2\u30c6\u30fc\u30de",
     price: 100,
     kind: "\u30c6\u30fc\u30de",
+    slot: "theme",
     tone: "bg-[#f2f8ff]",
   },
   {
@@ -48,6 +51,7 @@ const shopItems = [
     name: "\u65e5\u8a18\u5e33\u30c6\u30fc\u30de",
     price: 100,
     kind: "\u30c6\u30fc\u30de",
+    slot: "theme",
     tone: "bg-[#fff9ed]",
   },
   {
@@ -55,6 +59,7 @@ const shopItems = [
     name: "\u914d\u4fe1\u8005\u5411\u3051\u30d8\u30c3\u30c0\u30fc",
     price: 150,
     kind: "\u30d8\u30c3\u30c0\u30fc",
+    slot: "header",
     tone: "bg-[#eef7ff]",
   },
   {
@@ -62,6 +67,7 @@ const shopItems = [
     name: "\u30a4\u30d9\u30f3\u30c8\u544a\u77e5\u30d8\u30c3\u30c0\u30fc",
     price: 200,
     kind: "\u30d8\u30c3\u30c0\u30fc",
+    slot: "header",
     tone: "bg-[#f4fff5]",
   },
   {
@@ -69,6 +75,7 @@ const shopItems = [
     name: "\u914d\u4fe1\u3042\u308a\u304c\u3068\u3046\u30d8\u30c3\u30c0\u30fc",
     price: 150,
     kind: "\u30d8\u30c3\u30c0\u30fc",
+    slot: "header",
     tone: "bg-[#fff7fb]",
   },
   {
@@ -76,6 +83,7 @@ const shopItems = [
     name: "\u544a\u77e5\u65e5\u8a18\u30ab\u30fc\u30c9\u67a0",
     price: 200,
     kind: "\u30ab\u30fc\u30c9\u67a0",
+    slot: "card",
     tone: "bg-[#f7f3ff]",
   },
   {
@@ -83,6 +91,7 @@ const shopItems = [
     name: "\u63a8\u3057\u30ab\u30e9\u30fc\u80cc\u666f",
     price: 120,
     kind: "\u80cc\u666f",
+    slot: "background",
     tone: "bg-[#f1f7ff]",
   },
   {
@@ -90,6 +99,7 @@ const shopItems = [
     name: "\u30d5\u30a1\u30f3\u30ec\u30bf\u30fc\u98a8\u30c6\u30fc\u30de",
     price: 180,
     kind: "\u30c6\u30fc\u30de",
+    slot: "theme",
     tone: "bg-[#fff8ee]",
   },
   {
@@ -97,6 +107,7 @@ const shopItems = [
     name: "\u30a4\u30d9\u30f3\u30c8\u524d\u65e5\u544a\u77e5\u67a0",
     price: 300,
     kind: "\u30ab\u30fc\u30c9\u67a0",
+    slot: "card",
     tone: "bg-[#f4fff5]",
   },
 ];
@@ -105,8 +116,10 @@ export default function ShopPage() {
   const {
     currentUser,
     purchasedShopItemIds,
+    equippedShopItemIds,
     recommendationApplications,
     purchaseShopItem,
+    equipShopItem,
     applyRecommendation,
   } = useDayDrop();
   const [message, setMessage] = useState("");
@@ -116,6 +129,7 @@ export default function ShopPage() {
   }
 
   const purchased = purchasedShopItemIds[currentUser.id] ?? [];
+  const equipped = equippedShopItemIds[currentUser.id] ?? {};
   const today = new Date().toISOString().slice(0, 10);
   const appliedToday =
     recommendationApplications[currentUser.id]?.includes(today) ?? false;
@@ -254,6 +268,7 @@ export default function ShopPage() {
         <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {shopItems.map((item) => {
             const owned = purchased.includes(item.id);
+            const equippedItem = equipped[item.slot] === item.id;
             const affordable = currentUser.coinBalance >= item.price;
             return (
               <article
@@ -273,16 +288,34 @@ export default function ShopPage() {
                   </span>
                 </div>
                 <button
-                  onClick={() => buy(item.id, item.price)}
-                  disabled={owned || !affordable}
+                  onClick={() => {
+                    if (owned) {
+                      const ok = equipShopItem(item.id, item.slot);
+                      setMessage(
+                        ok
+                          ? "\u88c5\u5099\u3057\u307e\u3057\u305f\u3002\u30d7\u30ed\u30d5\u30a3\u30fc\u30eb\u306b\u7c21\u6613\u53cd\u6620\u3055\u308c\u307e\u3059\u3002"
+                          : "\u88c5\u5099\u3067\u304d\u307e\u305b\u3093\u3067\u3057\u305f\u3002",
+                      );
+                    } else {
+                      buy(item.id, item.price);
+                    }
+                  }}
+                  disabled={equippedItem || (!owned && !affordable)}
                   className="mt-3 w-full rounded-full bg-[#8b7cf6] px-4 py-2 text-sm font-black text-white disabled:bg-[#d6cff8]"
                 >
-                  {owned
-                    ? "\u8cfc\u5165\u6e08\u307f"
-                    : affordable
-                      ? "\u53d7\u3051\u53d6\u308b"
-                      : "\u30b3\u30a4\u30f3\u4e0d\u8db3"}
+                  {equippedItem
+                    ? "\u88c5\u5099\u4e2d"
+                    : owned
+                      ? "\u88c5\u5099\u3059\u308b"
+                      : affordable
+                        ? "\u53d7\u3051\u53d6\u308b"
+                        : "\u30b3\u30a4\u30f3\u4e0d\u8db3"}
                 </button>
+                {owned ? (
+                  <p className="mt-2 text-center text-[11px] font-black text-[#7c6ee6]">
+                    {"\u8cfc\u5165\u6e08\u307f"}
+                  </p>
+                ) : null}
               </article>
             );
           })}

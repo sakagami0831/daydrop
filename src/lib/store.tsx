@@ -14,6 +14,8 @@ import type {
   Diary,
   Impression,
   Notification,
+  ReportReason,
+  SafetyReport,
   User,
   Visibility,
 } from "./daydrop";
@@ -43,6 +45,13 @@ type DayDropState = {
   dailyReads: Record<string, string[]>;
   dailyClaims: Record<string, string[]>;
   purchasedShopItemIds: Record<string, string[]>;
+  equippedShopItemIds: Record<string, Record<string, string>>;
+  recommendationApplications: Record<string, string[]>;
+  blockedUserIds: Record<string, string[]>;
+  mutedUserIds: Record<string, string[]>;
+  hiddenDiaryIds: Record<string, string[]>;
+  hiddenImpressionIds: Record<string, string[]>;
+  safetyReports: SafetyReport[];
   currentUser: User | null;
 };
 
@@ -58,6 +67,19 @@ type DayDropContextValue = DayDropState & {
   claimDailyBonus: () => boolean;
   claimDailyMission: (missionId: string, reward: number) => boolean;
   purchaseShopItem: (itemId: string, price: number) => boolean;
+  equipShopItem: (itemId: string, slot: string) => boolean;
+  applyRecommendation: () => boolean;
+  toggleBlockUser: (targetUserId: string) => void;
+  toggleMuteUser: (targetUserId: string) => void;
+  hideDiary: (diaryId: string) => void;
+  unhideDiary: (diaryId: string) => void;
+  reportTarget: (
+    targetType: SafetyReport["targetType"],
+    targetId: string,
+    reason: ReportReason,
+  ) => boolean;
+  deleteImpression: (diaryId: string, impressionId: string) => void;
+  hideImpression: (impressionId: string) => void;
   getUser: (userId: string) => User | undefined;
   getVisibleDiaries: () => Diary[];
   getDiaryCount: (userId: string) => number;
@@ -76,6 +98,13 @@ const initialState: DayDropState = {
   dailyReads: {},
   dailyClaims: {},
   purchasedShopItemIds: {},
+  equippedShopItemIds: {},
+  recommendationApplications: {},
+  blockedUserIds: {},
+  mutedUserIds: {},
+  hiddenDiaryIds: {},
+  hiddenImpressionIds: {},
+  safetyReports: [],
   currentUser: seedUsers[0],
 };
 
@@ -89,6 +118,13 @@ const normalizeState = (state: DayDropState): DayDropState => ({
   dailyReads: state.dailyReads ?? {},
   dailyClaims: state.dailyClaims ?? {},
   purchasedShopItemIds: state.purchasedShopItemIds ?? {},
+  equippedShopItemIds: state.equippedShopItemIds ?? {},
+  recommendationApplications: state.recommendationApplications ?? {},
+  blockedUserIds: state.blockedUserIds ?? {},
+  mutedUserIds: state.mutedUserIds ?? {},
+  hiddenDiaryIds: state.hiddenDiaryIds ?? {},
+  hiddenImpressionIds: state.hiddenImpressionIds ?? {},
+  safetyReports: state.safetyReports ?? [],
   diaries: state.diaries.map((diary) => ({
     ...diary,
     tags: diary.tags ?? [],
@@ -299,7 +335,15 @@ export function DayDropProvider({ children }: { children: ReactNode }) {
   const addImpression = useCallback((diaryId: string, body: string) => {
     const viewer = state.currentUser;
     const targetDiary = state.diaries.find((item) => item.id === diaryId);
-    if (!viewer || !targetDiary || viewer.coinBalance < 1) {
+    const diaryAuthorBlocks = targetDiary
+      ? (state.blockedUserIds[targetDiary.authorId] ?? [])
+      : [];
+    if (
+      !viewer ||
+      !targetDiary ||
+      viewer.coinBalance < 1 ||
+      diaryAuthorBlocks.includes(viewer.id)
+    ) {
       return false;
     }
 
@@ -373,7 +417,7 @@ export function DayDropProvider({ children }: { children: ReactNode }) {
     });
 
     return true;
-  }, [state.currentUser, state.diaries]);
+  }, [state.blockedUserIds, state.currentUser, state.diaries]);
 
   const toggleLike = useCallback((diaryId: string) => {
     setState((current) => {
@@ -578,6 +622,277 @@ export function DayDropProvider({ children }: { children: ReactNode }) {
     return true;
   }, [state.currentUser, state.purchasedShopItemIds]);
 
+  const equipShopItem = useCallback((itemId: string, slot: string) => {
+    const viewer = state.currentUser;
+    if (!viewer) {
+      return false;
+    }
+
+    const purchased = state.purchasedShopItemIds[viewer.id] ?? [];
+    if (!purchased.includes(itemId)) {
+      return false;
+    }
+
+    setState((current) => {
+      const activeUser = current.currentUser;
+      if (!activeUser || activeUser.id !== viewer.id) {
+        return current;
+      }
+
+      const currentEquipped = current.equippedShopItemIds[viewer.id] ?? {};
+      return {
+        ...current,
+        equippedShopItemIds: {
+          ...current.equippedShopItemIds,
+          [viewer.id]: {
+            ...currentEquipped,
+            [slot]: itemId,
+          },
+        },
+      };
+    });
+
+    return true;
+  }, [state.currentUser, state.purchasedShopItemIds]);
+
+  const applyRecommendation = useCallback(() => {
+    const viewer = state.currentUser;
+    if (!viewer || viewer.coinBalance < 1000) {
+      return false;
+    }
+
+    const today = toDayKey();
+    const applications = state.recommendationApplications[viewer.id] ?? [];
+    if (applications.includes(today)) {
+      return false;
+    }
+
+    setState((current) => {
+      const activeUser = current.currentUser;
+      const currentApplications = activeUser
+        ? (current.recommendationApplications[activeUser.id] ?? [])
+        : [];
+      if (
+        !activeUser ||
+        activeUser.id !== viewer.id ||
+        activeUser.coinBalance < 1000 ||
+        currentApplications.includes(today)
+      ) {
+        return current;
+      }
+
+      const createdAt = new Date().toISOString();
+      const users = current.users.map((user) =>
+        user.id === viewer.id
+          ? { ...user, coinBalance: user.coinBalance - 1000 }
+          : user,
+      );
+
+      return {
+        ...current,
+        users,
+        currentUser: users.find((user) => user.id === viewer.id) ?? null,
+        recommendationApplications: {
+          ...current.recommendationApplications,
+          [viewer.id]: [...currentApplications, today],
+        },
+        coinTransactions: [
+          ...current.coinTransactions,
+          {
+            id: makeId("c"),
+            userId: viewer.id,
+            amount: -1000,
+            reason: "recommendation_application",
+            createdAt,
+          },
+        ],
+      };
+    });
+
+    return true;
+  }, [state.currentUser, state.recommendationApplications]);
+
+  const toggleBlockUser = useCallback((targetUserId: string) => {
+    setState((current) => {
+      const viewer = current.currentUser;
+      if (!viewer || viewer.id === targetUserId) {
+        return current;
+      }
+
+      const currentBlocked = current.blockedUserIds[viewer.id] ?? [];
+      const blocked = currentBlocked.includes(targetUserId);
+      const nextBlocked = blocked
+        ? currentBlocked.filter((id) => id !== targetUserId)
+        : [...currentBlocked, targetUserId];
+      const currentMuted = current.mutedUserIds[viewer.id] ?? [];
+
+      return {
+        ...current,
+        blockedUserIds: {
+          ...current.blockedUserIds,
+          [viewer.id]: nextBlocked,
+        },
+        mutedUserIds: {
+          ...current.mutedUserIds,
+          [viewer.id]: blocked
+            ? currentMuted
+            : currentMuted.filter((id) => id !== targetUserId),
+        },
+      };
+    });
+  }, []);
+
+  const toggleMuteUser = useCallback((targetUserId: string) => {
+    setState((current) => {
+      const viewer = current.currentUser;
+      if (!viewer || viewer.id === targetUserId) {
+        return current;
+      }
+
+      const blocked = current.blockedUserIds[viewer.id]?.includes(targetUserId);
+      if (blocked) {
+        return current;
+      }
+
+      const currentMuted = current.mutedUserIds[viewer.id] ?? [];
+      const muted = currentMuted.includes(targetUserId);
+
+      return {
+        ...current,
+        mutedUserIds: {
+          ...current.mutedUserIds,
+          [viewer.id]: muted
+            ? currentMuted.filter((id) => id !== targetUserId)
+            : [...currentMuted, targetUserId],
+        },
+      };
+    });
+  }, []);
+
+  const hideDiary = useCallback((diaryId: string) => {
+    setState((current) => {
+      const viewer = current.currentUser;
+      if (!viewer) {
+        return current;
+      }
+      const hidden = current.hiddenDiaryIds[viewer.id] ?? [];
+      if (hidden.includes(diaryId)) {
+        return current;
+      }
+      return {
+        ...current,
+        hiddenDiaryIds: {
+          ...current.hiddenDiaryIds,
+          [viewer.id]: [...hidden, diaryId],
+        },
+      };
+    });
+  }, []);
+
+  const unhideDiary = useCallback((diaryId: string) => {
+    setState((current) => {
+      const viewer = current.currentUser;
+      if (!viewer) {
+        return current;
+      }
+      return {
+        ...current,
+        hiddenDiaryIds: {
+          ...current.hiddenDiaryIds,
+          [viewer.id]: (current.hiddenDiaryIds[viewer.id] ?? []).filter(
+            (id) => id !== diaryId,
+          ),
+        },
+      };
+    });
+  }, []);
+
+  const reportTarget = useCallback(
+    (
+      targetType: SafetyReport["targetType"],
+      targetId: string,
+      reason: ReportReason,
+    ) => {
+      const viewer = state.currentUser;
+      if (!viewer) {
+        return false;
+      }
+      const alreadyReported = state.safetyReports.some(
+        (report) =>
+          report.reporterId === viewer.id &&
+          report.targetType === targetType &&
+          report.targetId === targetId,
+      );
+      if (alreadyReported) {
+        return false;
+      }
+
+      setState((current) => ({
+        ...current,
+        safetyReports: [
+          {
+            id: makeId("r"),
+            reporterId: viewer.id,
+            targetType,
+            targetId,
+            reason,
+            createdAt: new Date().toISOString(),
+          },
+          ...current.safetyReports,
+        ],
+      }));
+      return true;
+    },
+    [state.currentUser, state.safetyReports],
+  );
+
+  const deleteImpression = useCallback((diaryId: string, impressionId: string) => {
+    setState((current) => {
+      const viewer = current.currentUser;
+      if (!viewer) {
+        return current;
+      }
+      const diary = current.diaries.find((item) => item.id === diaryId);
+      const impression = diary?.impressions.find((item) => item.id === impressionId);
+      if (!diary || !impression || impression.authorId !== viewer.id) {
+        return current;
+      }
+      return {
+        ...current,
+        diaries: current.diaries.map((item) =>
+          item.id === diaryId
+            ? {
+                ...item,
+                impressions: item.impressions.filter(
+                  (comment) => comment.id !== impressionId,
+                ),
+              }
+            : item,
+        ),
+      };
+    });
+  }, []);
+
+  const hideImpression = useCallback((impressionId: string) => {
+    setState((current) => {
+      const viewer = current.currentUser;
+      if (!viewer) {
+        return current;
+      }
+      const hidden = current.hiddenImpressionIds[viewer.id] ?? [];
+      if (hidden.includes(impressionId)) {
+        return current;
+      }
+      return {
+        ...current,
+        hiddenImpressionIds: {
+          ...current.hiddenImpressionIds,
+          [viewer.id]: [...hidden, impressionId],
+        },
+      };
+    });
+  }, []);
+
   const getVisibleDiaries = useCallback(() => {
     const viewer = state.currentUser;
     if (!viewer) {
@@ -585,6 +900,12 @@ export function DayDropProvider({ children }: { children: ReactNode }) {
     }
 
     return state.diaries.filter((diary) => {
+      const blocked = state.blockedUserIds[viewer.id] ?? [];
+      const hidden = state.hiddenDiaryIds[viewer.id] ?? [];
+      if (blocked.includes(diary.authorId) || hidden.includes(diary.id)) {
+        return false;
+      }
+
       if (diary.visibility === "public") {
         return true;
       }
@@ -600,7 +921,13 @@ export function DayDropProvider({ children }: { children: ReactNode }) {
 
       return diary.recipientIds.includes(viewer.id);
     });
-  }, [getUser, state.currentUser, state.diaries]);
+  }, [
+    getUser,
+    state.blockedUserIds,
+    state.currentUser,
+    state.diaries,
+    state.hiddenDiaryIds,
+  ]);
 
   const searchDiaries = useCallback(
     (query: string, tag?: string) => {
@@ -645,6 +972,15 @@ export function DayDropProvider({ children }: { children: ReactNode }) {
       claimDailyBonus,
       claimDailyMission,
       purchaseShopItem,
+      equipShopItem,
+      applyRecommendation,
+      toggleBlockUser,
+      toggleMuteUser,
+      hideDiary,
+      unhideDiary,
+      reportTarget,
+      deleteImpression,
+      hideImpression,
       getUser,
       getVisibleDiaries,
       getDiaryCount,
@@ -664,6 +1000,15 @@ export function DayDropProvider({ children }: { children: ReactNode }) {
       claimDailyBonus,
       claimDailyMission,
       purchaseShopItem,
+      equipShopItem,
+      applyRecommendation,
+      toggleBlockUser,
+      toggleMuteUser,
+      hideDiary,
+      unhideDiary,
+      reportTarget,
+      deleteImpression,
+      hideImpression,
       getUser,
       getVisibleDiaries,
       getDiaryCount,

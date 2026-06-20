@@ -9,6 +9,7 @@ export function ProfilePanel() {
     currentUser,
     users,
     purchasedShopItemIds,
+    equippedShopItemIds,
     updateProfile,
     toggleFollow,
     getDiaryCount,
@@ -26,15 +27,28 @@ export function ProfilePanel() {
 
   const otherUsers = users.filter((user) => user.id !== currentUser.id);
   const purchased = purchasedShopItemIds[currentUser.id] ?? [];
-  const headerClass = purchased.includes("header-event")
+  const equipped = equippedShopItemIds[currentUser.id] ?? {};
+  const activeDecorations = [
+    equipped.header,
+    equipped.theme,
+    equipped.background,
+    ...purchased,
+  ].filter(Boolean);
+  const headerClass = activeDecorations.includes("header-event")
     ? "bg-[linear-gradient(135deg,#fff1f6,#f2efff_45%,#f4fff5)]"
-    : purchased.includes("header-streamer")
+    : activeDecorations.includes("header-thanks")
+      ? "bg-[linear-gradient(135deg,#fff7fb,#fff8ee_48%,#f2efff)]"
+    : activeDecorations.includes("header-streamer")
       ? "bg-[linear-gradient(135deg,#eef7ff,#f2efff_55%,#fff7fb)]"
-      : purchased.includes("theme-sakura")
+      : activeDecorations.includes("theme-fanletter")
+        ? "bg-[linear-gradient(135deg,#fff8ee,#ffffff_50%,#fff1f6)]"
+      : activeDecorations.includes("bg-oshi-color")
+        ? "bg-[linear-gradient(135deg,#f2efff,#eef7ff_45%,#fff7fb)]"
+      : activeDecorations.includes("theme-sakura")
         ? "bg-[linear-gradient(135deg,#fff1f6,#fff8fb_55%,#f2efff)]"
-        : purchased.includes("theme-cloud")
+        : activeDecorations.includes("theme-cloud")
           ? "bg-[linear-gradient(135deg,#eef7ff,#fbfaff_55%,#ffffff)]"
-          : purchased.includes("theme-notebook")
+          : activeDecorations.includes("theme-notebook")
             ? "bg-[linear-gradient(135deg,#fff9ed,#ffffff_55%,#f2efff)]"
             : "bg-[linear-gradient(135deg,#f0edff,#fff3f8_55%,#eef7ff)]";
 
