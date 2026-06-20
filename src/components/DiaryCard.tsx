@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import type { Diary } from "@/lib/daydrop";
+import { getDeliveryLabel } from "@/lib/delivery";
 import { useDayDrop } from "@/lib/store";
 
 const fallbackGradients = [
@@ -11,9 +12,10 @@ const fallbackGradients = [
 ];
 
 export function DiaryCard({ diary }: { diary: Diary }) {
-  const { currentUser, getUser, toggleLike } = useDayDrop();
+  const { currentUser, users, getUser, toggleLike } = useDayDrop();
   const author = getUser(diary.authorId);
   const liked = currentUser ? diary.likedBy.includes(currentUser.id) : false;
+  const deliveryLabel = getDeliveryLabel(diary, users);
   const fallbackIndex =
     diary.id.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0) %
     fallbackGradients.length;
@@ -41,6 +43,9 @@ export function DiaryCard({ diary }: { diary: Diary }) {
 
       <div className="p-3">
         <Link href={`/diary/${diary.id}`} className="block">
+          <span className="mb-2 inline-flex rounded-full bg-[#f0edff] px-2.5 py-1 text-[11px] font-black text-[#7c6ee6]">
+            {deliveryLabel}
+          </span>
           <h3 className="line-clamp-2 min-h-11 text-base font-black leading-5 text-[#2f2b3b]">
             {diary.title}
           </h3>
