@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { getDeliveryLabel } from "@/lib/delivery";
 import { visibilityLabels } from "@/lib/daydrop";
 import { useDayDrop } from "@/lib/store";
 
 export function DiaryDetail({ diaryId }: { diaryId: string }) {
-  const { currentUser, diaries, getUser, addImpression, toggleLike } =
+  const { currentUser, users, diaries, getUser, addImpression, toggleLike } =
     useDayDrop();
   const [body, setBody] = useState("");
   const [error, setError] = useState("");
@@ -34,6 +35,7 @@ export function DiaryDetail({ diaryId }: { diaryId: string }) {
 
   const author = getUser(diary.authorId);
   const liked = diary.likedBy.includes(currentUser.id);
+  const deliveryLabel = getDeliveryLabel(diary, users);
 
   const submit = () => {
     setError("");
@@ -82,7 +84,7 @@ export function DiaryDetail({ diaryId }: { diaryId: string }) {
               </div>
             </div>
             <span className="rounded-full bg-[#f0edff] px-3 py-1 text-xs font-black text-[#7c6ee6]">
-              {visibilityLabels[diary.visibility]}
+              {deliveryLabel || visibilityLabels[diary.visibility]}
             </span>
           </div>
 
