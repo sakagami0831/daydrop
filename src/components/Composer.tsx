@@ -30,6 +30,9 @@ export function Composer() {
   );
   const selectedRecipients =
     visibility === "followers" ? followerUsers.length : recipientIds.length;
+  const selectedRecipientNames = candidates
+    .filter((user) => recipientIds.includes(user.id))
+    .map((user) => user.name);
 
   const onImageChange = (file: File | undefined) => {
     if (!file) {
@@ -58,6 +61,11 @@ export function Composer() {
 
     if (currentUser.coinBalance < 30) {
       setError("\u30b3\u30a4\u30f3\u304c\u4e0d\u8db3\u3057\u3066\u3044\u307e\u3059\u3002\u65e5\u8a18\u306e\u6295\u7a3f\u306b\u306f30\u30b3\u30a4\u30f3\u5fc5\u8981\u3067\u3059\u3002");
+      return;
+    }
+
+    if (visibility === "specified" && recipientIds.length === 0) {
+      setError("\u6307\u5b9a\u30e6\u30fc\u30b6\u30fc\u3078\u9001\u4fe1\u3059\u308b\u5834\u5408\u306f\u3001\u5c4a\u3051\u308b\u76f8\u624b\u3092\u9078\u3093\u3067\u304f\u3060\u3055\u3044\u3002");
       return;
     }
 
@@ -204,6 +212,13 @@ export function Composer() {
                 </button>
               ))}
             </div>
+            <p className="mt-2 text-[11px] font-bold text-[#9b94aa]">
+              {selectedRecipientNames.length > 0
+                ? `${selectedRecipientNames
+                    .map((name) => `${name}\u3055\u3093`)
+                    .join("\u3001")}\u306b\u5c4a\u3051\u307e\u3059`
+                : "\u5c4a\u3051\u308b\u76f8\u624b\u3092\u9078\u3093\u3067\u304f\u3060\u3055\u3044\u3002"}
+            </p>
           </div>
         ) : null}
 
