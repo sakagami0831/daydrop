@@ -40,6 +40,8 @@ type DayDropState = {
   diaries: Diary[];
   notifications: Notification[];
   coinTransactions: CoinTransaction[];
+  dailyReads: Record<string, string[]>;
+  purchasedShopItemIds: Record<string, string[]>;
   currentUser: User | null;
 };
 
@@ -51,6 +53,9 @@ type DayDropContextValue = DayDropState & {
   toggleLike: (diaryId: string) => void;
   toggleFollow: (targetUserId: string) => void;
   markNotificationRead: (notificationId: string) => void;
+  markDiaryRead: (diaryId: string) => void;
+  claimDailyBonus: () => boolean;
+  purchaseShopItem: (itemId: string, price: number) => boolean;
   getUser: (userId: string) => User | undefined;
   getVisibleDiaries: () => Diary[];
   getDiaryCount: (userId: string) => number;
@@ -66,14 +71,20 @@ const initialState: DayDropState = {
   diaries: seedDiaries,
   notifications: seedNotifications,
   coinTransactions: seedCoinTransactions,
+  dailyReads: {},
+  purchasedShopItemIds: {},
   currentUser: seedUsers[0],
 };
 
 const makeId = (prefix: string) =>
   `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
+const toDayKey = (date = new Date()) => date.toISOString().slice(0, 10);
+
 const normalizeState = (state: DayDropState): DayDropState => ({
   ...state,
+  dailyReads: state.dailyReads ?? {},
+  purchasedShopItemIds: state.purchasedShopItemIds ?? {},
   diaries: state.diaries.map((diary) => ({
     ...diary,
     tags: diary.tags ?? [],
@@ -207,43 +218,44 @@ export function DayDropProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const createDiary = useCallback((draft: DraftDiary) => {
-    let createdDiary: Diary | null = null;
+    const viewer = state.currentUser;
+    if (!viewer || viewer.coinBalance < 30) {
+      return null;
+    }
+
+    const deliveryTargets =
+      draft.visibility === "public"
+        ? []
+        : draft.visibility === "followers"
+          ? viewer.followers
+          : draft.recipientIds;
+
+    const diary: Diary = {
+      id: makeId("d"),
+      authorId: viewer.id,
+      title: draft.title,
+      body: draft.body,
+      imageUrl: draft.imageUrl,
+      visibility: draft.visibility,
+      recipientIds: deliveryTargets,
+      tags: draft.tags ?? [],
+      createdAt: new Date().toISOString(),
+      likedBy: [],
+      impressions: [],
+    };
 
     setState((current) => {
-      const viewer = current.currentUser;
-      if (!viewer || viewer.coinBalance < 30) {
+      const activeUser = current.currentUser;
+      if (!activeUser || activeUser.id !== viewer.id || activeUser.coinBalance < 30) {
         return current;
       }
-
-      const deliveryTargets =
-        draft.visibility === "public"
-          ? []
-          : draft.visibility === "followers"
-            ? viewer.followers
-            : draft.recipientIds;
-
-      const diary: Diary = {
-        id: makeId("d"),
-        authorId: viewer.id,
-        title: draft.title,
-        body: draft.body,
-        imageUrl: draft.imageUrl,
-        visibility: draft.visibility,
-        recipientIds: deliveryTargets,
-        tags: draft.tags ?? [],
-        createdAt: new Date().toISOString(),
-        likedBy: [],
-        impressions: [],
-      };
-
-      createdDiary = diary;
 
       const deliveryNotifications: Notification[] = deliveryTargets.map(
         (userId) => ({
           id: makeId("n"),
           userId,
           type: "diary_delivered",
-                message: `${viewer.name}\u3055\u3093\u304b\u3089\u4eca\u65e5\u306e\u65e5\u8a18\u304c\u5c4a\u304d\u307e\u3057\u305f`,
+          message: `${viewer.name}\u3055\u3093\u304b\u3089\u4eca\u65e5\u306e\u65e5\u8a18\u304c\u5c4a\u304d\u307e\u3057\u305f`,
           createdAt: diary.createdAt,
           read: false,
           diaryId: diary.id,
@@ -277,15 +289,19 @@ export function DayDropProvider({ children }: { children: ReactNode }) {
       };
     });
 
-    return createdDiary;
-  }, []);
+    return diary;
+  }, [state.currentUser]);
 
   const addImpression = useCallback((diaryId: string, body: string) => {
-    let created = false;
+    const viewer = state.currentUser;
+    const targetDiary = state.diaries.find((item) => item.id === diaryId);
+    if (!viewer || !targetDiary || viewer.coinBalance < 1) {
+      return false;
+    }
 
     setState((current) => {
-      const viewer = current.currentUser;
-      if (!viewer || viewer.coinBalance < 1) {
+      const activeUser = current.currentUser;
+      if (!activeUser || activeUser.id !== viewer.id || activeUser.coinBalance < 1) {
         return current;
       }
 
@@ -294,7 +310,6 @@ export function DayDropProvider({ children }: { children: ReactNode }) {
         return current;
       }
 
-      created = true;
       const createdAt = new Date().toISOString();
       const impression: Impression = {
         id: makeId("i"),
@@ -353,8 +368,8 @@ export function DayDropProvider({ children }: { children: ReactNode }) {
       };
     });
 
-    return created;
-  }, []);
+    return true;
+  }, [state.currentUser, state.diaries]);
 
   const toggleLike = useCallback((diaryId: string) => {
     setState((current) => {
@@ -420,6 +435,136 @@ export function DayDropProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
+  const markDiaryRead = useCallback((diaryId: string) => {
+    setState((current) => {
+      const viewer = current.currentUser;
+      if (!viewer || !current.diaries.some((diary) => diary.id === diaryId)) {
+        return current;
+      }
+
+      const key = `${viewer.id}:${toDayKey()}`;
+      const reads = current.dailyReads[key] ?? [];
+      if (reads.includes(diaryId)) {
+        return current;
+      }
+
+      return {
+        ...current,
+        dailyReads: {
+          ...current.dailyReads,
+          [key]: [...reads, diaryId],
+        },
+      };
+    });
+  }, []);
+
+  const claimDailyBonus = useCallback(() => {
+    const today = toDayKey();
+    const viewer = state.currentUser;
+    if (!viewer) {
+      return false;
+    }
+
+    const alreadyClaimed = state.coinTransactions.some(
+      (transaction) =>
+        transaction.userId === viewer.id &&
+        transaction.reason === "daily_reward" &&
+        toDayKey(new Date(transaction.createdAt)) === today,
+    );
+
+    if (alreadyClaimed) {
+      return false;
+    }
+
+    setState((current) => {
+      const activeUser = current.currentUser;
+      if (!activeUser || activeUser.id !== viewer.id) {
+        return current;
+      }
+
+      const createdAt = new Date().toISOString();
+      const users = current.users.map((user) =>
+        user.id === viewer.id
+          ? { ...user, coinBalance: user.coinBalance + 10 }
+          : user,
+      );
+
+      return {
+        ...current,
+        users,
+        currentUser: users.find((user) => user.id === viewer.id) ?? null,
+        coinTransactions: [
+          ...current.coinTransactions,
+          {
+            id: makeId("c"),
+            userId: viewer.id,
+            amount: 10,
+            reason: "daily_reward",
+            createdAt,
+          },
+        ],
+      };
+    });
+
+    return true;
+  }, [state.coinTransactions, state.currentUser]);
+
+  const purchaseShopItem = useCallback((itemId: string, price: number) => {
+    const viewer = state.currentUser;
+    if (!viewer || viewer.coinBalance < price) {
+      return false;
+    }
+
+    const purchased = state.purchasedShopItemIds[viewer.id] ?? [];
+    if (purchased.includes(itemId)) {
+      return false;
+    }
+
+    setState((current) => {
+      const activeUser = current.currentUser;
+      const currentPurchased = activeUser
+        ? (current.purchasedShopItemIds[activeUser.id] ?? [])
+        : [];
+      if (
+        !activeUser ||
+        activeUser.id !== viewer.id ||
+        activeUser.coinBalance < price ||
+        currentPurchased.includes(itemId)
+      ) {
+        return current;
+      }
+
+      const createdAt = new Date().toISOString();
+      const users = current.users.map((user) =>
+        user.id === viewer.id
+          ? { ...user, coinBalance: user.coinBalance - price }
+          : user,
+      );
+
+      return {
+        ...current,
+        users,
+        currentUser: users.find((user) => user.id === viewer.id) ?? null,
+        purchasedShopItemIds: {
+          ...current.purchasedShopItemIds,
+          [viewer.id]: [...currentPurchased, itemId],
+        },
+        coinTransactions: [
+          ...current.coinTransactions,
+          {
+            id: makeId("c"),
+            userId: viewer.id,
+            amount: -price,
+            reason: "shop_purchase",
+            createdAt,
+          },
+        ],
+      };
+    });
+
+    return true;
+  }, [state.currentUser, state.purchasedShopItemIds]);
+
   const getVisibleDiaries = useCallback(() => {
     const viewer = state.currentUser;
     if (!viewer) {
@@ -483,6 +628,9 @@ export function DayDropProvider({ children }: { children: ReactNode }) {
       toggleLike,
       toggleFollow,
       markNotificationRead,
+      markDiaryRead,
+      claimDailyBonus,
+      purchaseShopItem,
       getUser,
       getVisibleDiaries,
       getDiaryCount,
@@ -498,6 +646,9 @@ export function DayDropProvider({ children }: { children: ReactNode }) {
       toggleLike,
       toggleFollow,
       markNotificationRead,
+      markDiaryRead,
+      claimDailyBonus,
+      purchaseShopItem,
       getUser,
       getVisibleDiaries,
       getDiaryCount,

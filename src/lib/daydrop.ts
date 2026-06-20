@@ -50,7 +50,8 @@ export type CoinTransactionReason =
   | "diary_post"
   | "impression_post"
   | "daily_reward"
-  | "like_received";
+  | "like_received"
+  | "shop_purchase";
 
 export type CoinTransaction = {
   id: string;

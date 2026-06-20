@@ -10,7 +10,7 @@ const tabs = [
   "\u304a\u3059\u3059\u3081",
   "\u6025\u4e0a\u6607",
   "\u65b0\u7740",
-  "\u307f\u3093\u306a\u306e\u6295\u7a3f",
+  "\u304a\u77e5\u3089\u305b\u65e5\u8a18",
 ];
 
 export default function Home() {
@@ -42,7 +42,7 @@ export default function Home() {
                 {"\u8aad\u3093\u3067\u304f\u308c\u3066\u3001\u3042\u308a\u304c\u3068\u3046\u3002"}
               </p>
               <h1 className="mt-1 truncate text-xl font-black tracking-[0.06em] text-[#363142] md:text-2xl">
-                {"\u307f\u3093\u306a\u306e\u65e5\u8a18\u3092\u8aad\u3093\u3067\u3001"}
+                {"\u4eca\u65e5\u306e\u914d\u4fe1\u30ec\u30dd\u30fc\u30c8\u3092\u8aad\u3093\u3067\u3001"}
                 <span className="text-[#8b7cf6]">{"\u611f\u60f3"}</span>
                 {"\u3092\u5c4a\u3051\u3088\u3046"}
               </h1>
@@ -109,7 +109,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+        <section className="grid grid-cols-1 justify-center gap-3 sm:grid-cols-[repeat(2,minmax(220px,280px))] lg:justify-start xl:grid-cols-[repeat(3,minmax(220px,280px))] 2xl:grid-cols-[repeat(4,minmax(220px,280px))]">
           {diaries.length === 0 ? (
             <p className="rounded-2xl border border-[#ece7fb] bg-white p-4 text-sm text-[#9b94aa] shadow-sm sm:col-span-2 xl:col-span-3">
               {"\u307e\u3060\u5c4a\u3044\u3066\u3044\u308b\u65e5\u8a18\u306f\u3042\u308a\u307e\u305b\u3093\u3002"}

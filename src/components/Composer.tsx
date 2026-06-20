@@ -69,6 +69,11 @@ export function Composer() {
       return;
     }
 
+    if (visibility === "followers" && followerUsers.length === 0) {
+      setError("\u30d5\u30a9\u30ed\u30ef\u30fc\u3078\u9001\u4fe1\u3059\u308b\u5c4a\u3051\u5148\u304c\u307e\u3060\u3044\u307e\u305b\u3093\u3002\u5168\u4f53\u516c\u958b\u304b\u6307\u5b9a\u30e6\u30fc\u30b6\u30fc\u3092\u9078\u3093\u3067\u304f\u3060\u3055\u3044\u3002");
+      return;
+    }
+
     const diary = createDiary({
       title: title.trim(),
       body: body.trim(),

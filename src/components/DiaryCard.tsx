@@ -21,42 +21,47 @@ export function DiaryCard({ diary }: { diary: Diary }) {
     fallbackGradients.length;
 
   return (
-    <article className="overflow-hidden rounded-2xl border border-[#ece7fb] bg-white shadow-[0_10px_24px_rgba(126,112,174,0.09)] transition hover:-translate-y-0.5 hover:shadow-[0_16px_34px_rgba(126,112,174,0.13)]">
+    <article className="overflow-hidden rounded-2xl border border-[#ece7fb] bg-white shadow-[0_10px_20px_rgba(126,112,174,0.08)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_28px_rgba(126,112,174,0.12)]">
       <Link href={`/diary/${diary.id}`} className="block">
         {diary.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={diary.imageUrl}
             alt=""
-            className="h-28 w-full object-cover"
+            className="aspect-square w-full object-cover"
           />
         ) : (
           <div
-            className={`flex h-28 items-center justify-center bg-gradient-to-br ${fallbackGradients[fallbackIndex]}`}
+            className={`flex aspect-square w-full items-center justify-center bg-gradient-to-br ${fallbackGradients[fallbackIndex]}`}
           >
-            <span className="rounded-full bg-white/70 px-3 py-1 text-xs font-black text-[#8b7cf6]">
-              DayDrop
+            <span className="rounded-full bg-white/75 px-3 py-1 text-xs font-black text-[#8b7cf6]">
+              {"\u914d\u4fe1\u30ec\u30dd\u30fc\u30c8"}
             </span>
           </div>
         )}
       </Link>
 
-      <div className="p-3">
+      <div className="p-2.5">
         <Link href={`/diary/${diary.id}`} className="block">
-          <span className="mb-2 inline-flex rounded-full bg-[#f0edff] px-2.5 py-1 text-[11px] font-black text-[#7c6ee6]">
-            {deliveryLabel}
-          </span>
-          <h3 className="line-clamp-2 min-h-11 text-base font-black leading-5 text-[#2f2b3b]">
+          <div className="mb-1.5 flex items-center justify-between gap-1.5">
+            <span className="min-w-0 truncate rounded-full bg-[#f0edff] px-2 py-0.5 text-[10px] font-black text-[#7c6ee6]">
+              {deliveryLabel}
+            </span>
+            <span className="shrink-0 rounded-full bg-[#fff7fb] px-2 py-0.5 text-[10px] font-black text-[#b86f9a]">
+              {"\u304a\u77e5\u3089\u305b\u65e5\u8a18"}
+            </span>
+          </div>
+          <h3 className="line-clamp-2 min-h-9 text-sm font-black leading-[18px] text-[#2f2b3b]">
             {diary.title}
           </h3>
-          <p className="mt-1.5 line-clamp-2 min-h-10 text-xs leading-5 text-[#746d82]">
+          <p className="mt-0.5 line-clamp-1 text-[11px] leading-4 text-[#746d82]">
             {diary.body}
           </p>
         </Link>
 
-        <div className="mt-3 flex items-center justify-between gap-2">
-          <div className="flex min-w-0 items-center gap-2">
-            <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[#f0edff] text-xs font-black text-[#8b7cf6]">
+        <div className="mt-2 flex items-center justify-between gap-2">
+          <div className="flex min-w-0 items-center gap-1.5">
+            <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[#f0edff] text-[11px] font-black text-[#8b7cf6]">
               {author?.avatar ?? "?"}
             </span>
             <div className="min-w-0">
@@ -70,7 +75,7 @@ export function DiaryCard({ diary }: { diary: Diary }) {
           </div>
           <button
             onClick={() => toggleLike(diary.id)}
-            className={`rounded-full px-2.5 py-1 text-[11px] font-black ${
+            className={`rounded-full px-2 py-0.5 text-[10px] font-black ${
               liked
                 ? "bg-[#f0edff] text-[#7c6ee6]"
                 : "border border-[#ece7fb] bg-white text-[#9b94aa]"
@@ -82,9 +87,11 @@ export function DiaryCard({ diary }: { diary: Diary }) {
 
         <Link
           href={`/diary/${diary.id}`}
-          className="mt-3 flex items-center justify-between rounded-xl bg-[#fbfaff] px-3 py-2"
+          className="mt-2 flex items-center justify-between rounded-xl bg-[#fbfaff] px-2.5 py-1.5"
         >
-          <span className="text-xs font-black text-[#7c6ee6]">{"\u611f\u60f3"}</span>
+          <span className="text-[11px] font-black text-[#7c6ee6]">
+            {"\u611f\u60f3\u3092\u5c4a\u3051\u308b"}
+          </span>
           <span className="text-sm font-black text-[#7c6ee6]">
             {diary.impressions.length}
             {"\u4ef6"}

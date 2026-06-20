@@ -1,17 +1,30 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { getDeliveryLabel } from "@/lib/delivery";
 import { visibilityLabels } from "@/lib/daydrop";
 import { useDayDrop } from "@/lib/store";
 
 export function DiaryDetail({ diaryId }: { diaryId: string }) {
-  const { currentUser, users, diaries, getUser, addImpression, toggleLike } =
-    useDayDrop();
+  const {
+    currentUser,
+    users,
+    diaries,
+    getUser,
+    addImpression,
+    toggleLike,
+    markDiaryRead,
+  } = useDayDrop();
   const [body, setBody] = useState("");
   const [error, setError] = useState("");
   const diary = diaries.find((item) => item.id === diaryId);
+
+  useEffect(() => {
+    if (diary) {
+      markDiaryRead(diary.id);
+    }
+  }, [diary, markDiaryRead]);
 
   if (!currentUser) {
     return null;
