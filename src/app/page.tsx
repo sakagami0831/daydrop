@@ -2,6 +2,7 @@
 
 import { AppShell } from "@/components/AppShell";
 import { DiaryCard } from "@/components/DiaryCard";
+import { getDeliveredDiariesForUser } from "@/lib/delivery";
 import { useDayDrop } from "@/lib/store";
 import { useState } from "react";
 
@@ -13,9 +14,18 @@ const tabs = [
 ];
 
 export default function Home() {
-  const { currentUser, searchDiaries, notifications } = useDayDrop();
+  const { currentUser, diaries: allDiaries, searchDiaries, notifications } = useDayDrop();
   const [query, setQuery] = useState("");
   const diaries = searchDiaries(query);
+  const deliveredDiaries = currentUser
+    ? getDeliveredDiariesForUser(allDiaries, currentUser.id)
+    : [];
+  const todayDelivered = deliveredDiaries.filter((diary) => {
+    const created = new Date(diary.createdAt);
+    const today = new Date();
+    return created.toDateString() === today.toDateString();
+  });
+  const deliveryCount = todayDelivered.length;
   const unreadCount = currentUser
     ? notifications.filter(
         (notification) => notification.userId === currentUser.id && !notification.read,
@@ -47,6 +57,29 @@ export default function Home() {
             </div>
           </div>
         </header>
+
+        <section className="rounded-2xl border border-[#ece7fb] bg-white/90 p-3 shadow-[0_10px_26px_rgba(126,112,174,0.08)]">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-xs font-black text-[#8b7cf6]">
+                {"\u4eca\u65e5\u5c4a\u3044\u305f\u65e5\u8a18"}
+              </p>
+              <h2 className="text-lg font-black">
+                {deliveryCount > 0
+                  ? `${deliveryCount}\u4ef6\u306e\u65e5\u8a18\u304c\u5c4a\u3044\u3066\u3044\u307e\u3059`
+                  : "\u4eca\u65e5\u306f\u307e\u3060\u65e5\u8a18\u304c\u5c4a\u3044\u3066\u3044\u307e\u305b\u3093"}
+              </h2>
+            </div>
+            {todayDelivered[0] ? (
+              <a
+                href={`/diary/${todayDelivered[0].id}`}
+                className="rounded-full bg-[#8b7cf6] px-4 py-2 text-xs font-black text-white"
+              >
+                {"\u6700\u65b0\u306e\u65e5\u8a18\u3092\u8aad\u3080"}
+              </a>
+            ) : null}
+          </div>
+        </section>
 
         <section className="rounded-2xl border border-[#ece7fb] bg-white/90 p-2.5 shadow-[0_10px_26px_rgba(126,112,174,0.08)]">
           <div className="flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between">
