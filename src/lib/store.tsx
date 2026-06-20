@@ -215,6 +215,13 @@ export function DayDropProvider({ children }: { children: ReactNode }) {
         return current;
       }
 
+      const deliveryTargets =
+        draft.visibility === "public"
+          ? []
+          : draft.visibility === "followers"
+            ? viewer.followers
+            : draft.recipientIds;
+
       const diary: Diary = {
         id: makeId("d"),
         authorId: viewer.id,
@@ -222,7 +229,7 @@ export function DayDropProvider({ children }: { children: ReactNode }) {
         body: draft.body,
         imageUrl: draft.imageUrl,
         visibility: draft.visibility,
-        recipientIds: draft.recipientIds,
+        recipientIds: deliveryTargets,
         tags: draft.tags ?? [],
         createdAt: new Date().toISOString(),
         likedBy: [],
@@ -231,19 +238,12 @@ export function DayDropProvider({ children }: { children: ReactNode }) {
 
       createdDiary = diary;
 
-      const deliveryTargets =
-        draft.visibility === "public"
-          ? []
-          : draft.visibility === "followers"
-            ? viewer.followers
-            : draft.recipientIds;
-
       const deliveryNotifications: Notification[] = deliveryTargets.map(
         (userId) => ({
           id: makeId("n"),
           userId,
           type: "diary_delivered",
-          message: `${viewer.name}\u3055\u3093\u304b\u3089\u65e5\u8a18\u304c\u5c4a\u3044\u3066\u3044\u307e\u3059`,
+                message: `${viewer.name}\u3055\u3093\u304b\u3089\u4eca\u65e5\u306e\u65e5\u8a18\u304c\u5c4a\u304d\u307e\u3057\u305f`,
           createdAt: diary.createdAt,
           read: false,
           diaryId: diary.id,
@@ -318,7 +318,7 @@ export function DayDropProvider({ children }: { children: ReactNode }) {
                 id: makeId("n"),
                 userId: diary.authorId,
                 type: "impression_received" as const,
-                message: `${viewer.name}\u3055\u3093\u304b\u3089\u611f\u60f3\u304c\u5c4a\u3044\u3066\u3044\u307e\u3059`,
+                message: `${viewer.name}\u3055\u3093\u304c\u3042\u306a\u305f\u306e\u65e5\u8a18\u306b\u611f\u60f3\u3092\u5c4a\u3051\u307e\u3057\u305f`,
                 createdAt,
                 read: false,
                 diaryId,
