@@ -13,6 +13,18 @@ const tabs = [
   "\u304a\u77e5\u3089\u305b\u65e5\u8a18",
 ];
 
+const toDayKey = (date = new Date()) => date.toISOString().slice(0, 10);
+
+const coinReasonLabels: Record<string, string> = {
+  initial_bonus: "\u521d\u56de\u30dc\u30fc\u30ca\u30b9",
+  diary_post: "\u65e5\u8a18\u3092\u5c4a\u3051\u305f",
+  impression_post: "\u611f\u60f3\u3092\u5c4a\u3051\u305f",
+  daily_reward: "\u30c7\u30a4\u30ea\u30fc\u5831\u916c",
+  like_received: "\u3044\u3044\u306d\u7372\u5f97",
+  shop_purchase: "\u88c5\u98fe\u3092\u53d7\u3051\u53d6\u3063\u305f",
+  recommendation_application: "\u304a\u3059\u3059\u3081\u63b2\u8f09\u7533\u8acb",
+};
+
 export default function Home() {
   const {
     currentUser,
@@ -23,6 +35,9 @@ export default function Home() {
     mutedUserIds,
     blockedUserIds,
     hiddenDiaryIds,
+    dailyReads,
+    dailyClaims,
+    coinTransactions,
   } = useDayDrop();
   const [query, setQuery] = useState("");
   const hidden = currentUser ? hiddenDiaryIds[currentUser.id] ?? [] : [];
@@ -54,6 +69,37 @@ export default function Home() {
         (notification) => notification.userId === currentUser.id && !notification.read,
       ).length
     : 0;
+  const todayKey = currentUser ? `${currentUser.id}:${toDayKey()}` : "";
+  const todayReads = todayKey ? dailyReads[todayKey]?.length ?? 0 : 0;
+  const todayClaims = todayKey ? dailyClaims[todayKey] ?? [] : [];
+  const wroteToday = currentUser
+    ? allDiaries.some(
+        (diary) =>
+          diary.authorId === currentUser.id &&
+          toDayKey(new Date(diary.createdAt)) === toDayKey(),
+      )
+    : false;
+  const impressionToday = currentUser
+    ? allDiaries
+        .flatMap((diary) => diary.impressions)
+        .some(
+          (impression) =>
+            impression.authorId === currentUser.id &&
+            toDayKey(new Date(impression.createdAt)) === toDayKey(),
+        )
+    : false;
+  const missionProgress = [
+    todayClaims.includes("login"),
+    wroteToday,
+    todayReads >= 3,
+    impressionToday,
+  ].filter(Boolean).length;
+  const recentCoins = currentUser
+    ? coinTransactions
+        .filter((transaction) => transaction.userId === currentUser.id)
+        .slice(-3)
+        .reverse()
+    : [];
 
   return (
     <AppShell>
@@ -140,6 +186,71 @@ export default function Home() {
           </div>
         </section>
 
+        <section className="grid gap-3 lg:grid-cols-[1.2fr_0.8fr]">
+          <div className="rounded-2xl border border-[#ece7fb] bg-white/90 p-3 shadow-[0_10px_26px_rgba(126,112,174,0.08)]">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-black text-[#8b7cf6]">
+                  {"\u4eca\u65e5\u306e\u9054\u6210\u72b6\u6cc1"}
+                </p>
+                <h2 className="text-lg font-black">
+                  {missionProgress} / 4
+                  {"\u30df\u30c3\u30b7\u30e7\u30f3"}
+                </h2>
+              </div>
+              <a
+                href="/daily"
+                className="rounded-full bg-[#8b7cf6] px-4 py-2 text-xs font-black text-white"
+              >
+                {"\u30c7\u30a4\u30ea\u30fc\u3078"}
+              </a>
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <MissionChip done={todayClaims.includes("login")} label={"\u30ed\u30b0\u30a4\u30f3"} />
+              <MissionChip done={wroteToday} label={"\u65e5\u8a18"} />
+              <MissionChip done={todayReads >= 3} label={`${Math.min(todayReads, 3)}/3\u8aad\u3080`} />
+              <MissionChip done={impressionToday} label={"\u611f\u60f3"} />
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-[#ece7fb] bg-white/90 p-3 shadow-[0_10px_26px_rgba(126,112,174,0.08)]">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-black text-[#8b7cf6]">
+                {"\u6700\u8fd1\u306e\u30b3\u30a4\u30f3"}
+              </p>
+              <span className="rounded-full bg-[#f2efff] px-2.5 py-1 text-xs font-black text-[#7c6ee6]">
+                C {currentUser?.coinBalance ?? 0}
+              </span>
+            </div>
+            <div className="mt-2 grid gap-1.5">
+              {recentCoins.length === 0 ? (
+                <p className="text-xs text-[#9b94aa]">
+                  {"\u30c7\u30a4\u30ea\u30fc\u3084\u3044\u3044\u306d\u3067\u30b3\u30a4\u30f3\u3092\u96c6\u3081\u3088\u3046\u3002"}
+                </p>
+              ) : (
+                recentCoins.map((transaction) => (
+                  <div
+                    key={transaction.id}
+                    className="flex items-center justify-between rounded-xl bg-[#fbfaff] px-2.5 py-1.5 text-xs"
+                  >
+                    <span className="font-bold text-[#746d82]">
+                      {coinReasonLabels[transaction.reason] ?? transaction.reason}
+                    </span>
+                    <span
+                      className={`font-black ${
+                        transaction.amount > 0 ? "text-[#4d9a62]" : "text-[#b15b77]"
+                      }`}
+                    >
+                      {transaction.amount > 0 ? "+" : ""}
+                      {transaction.amount}
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </section>
+
         <section className="rounded-2xl border border-[#ece7fb] bg-white/90 p-2.5 shadow-[0_10px_26px_rgba(126,112,174,0.08)]">
           <div className="flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between">
             <div className="grid grid-cols-4 gap-1.5">
@@ -183,5 +294,18 @@ export default function Home() {
         </button>
       </div>
     </AppShell>
+  );
+}
+
+function MissionChip({ done, label }: { done: boolean; label: string }) {
+  return (
+    <span
+      className={`rounded-full px-2.5 py-1 text-center text-xs font-black ${
+        done ? "bg-[#edf8f0] text-[#4d9a62]" : "bg-[#f2efff] text-[#7c6ee6]"
+      }`}
+    >
+      {done ? "\u9054\u6210 " : ""}
+      {label}
+    </span>
   );
 }
