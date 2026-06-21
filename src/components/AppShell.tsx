@@ -30,7 +30,7 @@ const bottomNavItems = [
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { currentUser, users, login } = useDayDrop();
+  const { currentUser, users, login, logout } = useDayDrop();
 
   if (!currentUser) {
     return <AuthPanel />;
@@ -122,6 +122,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   {"\u30db\u30fc\u30e0\u3067\u65e5\u8a18\u3092\u8aad\u307f\u3001\u611f\u60f3\u3092\u5c4a\u3051\u3088\u3046\u3002"}
                 </p>
               </div>
+              <button
+                onClick={logout}
+                className="rounded-full border border-[#ece7fb] bg-white px-4 py-2 text-center text-xs font-black text-[#9b94aa]"
+              >
+                {"\u30ed\u30b0\u30a2\u30a6\u30c8"}
+              </button>
             </div>
           </div>
         </aside>
