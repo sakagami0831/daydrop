@@ -8,7 +8,6 @@ import { AuthPanel } from "./AuthPanel";
 const navItems = [
   { label: "\u30db\u30fc\u30e0", href: "/", icon: "H" },
   { label: "\u898b\u3064\u3051\u308b", href: "/discover", icon: "S" },
-  { label: "\u304a\u6c17\u306b\u5165\u308a", href: "/favorites", icon: "*" },
   { label: "\u304a\u77e5\u3089\u305b", href: "/notifications", icon: "N" },
   { label: "\u30c7\u30a4\u30ea\u30fc", href: "/daily", icon: "D" },
   { label: "\u79f0\u53f7\u30fb\u5b9f\u7e3e", href: "/mypage", icon: "T" },
