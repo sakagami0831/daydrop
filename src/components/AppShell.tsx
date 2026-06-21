@@ -2,14 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
 import { useDayDrop } from "@/lib/store";
 import { AuthPanel } from "./AuthPanel";
 
 const navItems = [
   { label: "\u30db\u30fc\u30e0", href: "/", icon: "H" },
   { label: "\u898b\u3064\u3051\u308b", href: "/discover", icon: "S" },
-  { label: "\u304a\u6c17\u306b\u5165\u308a", href: "#", icon: "*", pending: true },
+  { label: "\u304a\u6c17\u306b\u5165\u308a", href: "/favorites", icon: "*" },
   { label: "\u304a\u77e5\u3089\u305b", href: "/notifications", icon: "N" },
   { label: "\u30c7\u30a4\u30ea\u30fc", href: "/daily", icon: "D" },
   { label: "\u79f0\u53f7\u30fb\u5b9f\u7e3e", href: "/mypage", icon: "T" },
@@ -33,7 +32,6 @@ const bottomNavItems = [
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { currentUser, users, login } = useDayDrop();
-  const [notice, setNotice] = useState("");
 
   if (!currentUser) {
     return <AuthPanel />;
@@ -89,17 +87,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
             <nav className="grid gap-0.5">
               {navItems.map((item) => {
-                const active = pathname === item.href && !item.pending;
+                const active = pathname === item.href;
                 return (
                   <Link
                     key={item.label}
                     href={item.href}
-                    onClick={(event) => {
-                      if (item.pending) {
-                        event.preventDefault();
-                        setNotice("\u3053\u306e\u6a5f\u80fd\u306f\u6e96\u5099\u4e2d\u3067\u3059\u3002");
-                      }
-                    }}
                     className={`flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-[13px] font-bold transition ${
                       active
                         ? "bg-[#f0edff] text-[#7c6ee6]"
@@ -131,11 +123,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   {"\u30db\u30fc\u30e0\u3067\u65e5\u8a18\u3092\u8aad\u307f\u3001\u611f\u60f3\u3092\u5c4a\u3051\u3088\u3046\u3002"}
                 </p>
               </div>
-              {notice ? (
-                <p className="rounded-xl bg-[#fbfaff] px-3 py-2 text-xs font-bold text-[#7c6ee6]">
-                  {notice}
-                </p>
-              ) : null}
             </div>
           </div>
         </aside>
