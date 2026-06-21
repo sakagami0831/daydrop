@@ -52,6 +52,7 @@ type DayDropState = {
   hiddenDiaryIds: Record<string, string[]>;
   hiddenImpressionIds: Record<string, string[]>;
   safetyReports: SafetyReport[];
+  favoriteDiaryIds: Record<string, string[]>;
   currentUser: User | null;
 };
 
@@ -73,6 +74,7 @@ type DayDropContextValue = DayDropState & {
   toggleMuteUser: (targetUserId: string) => void;
   hideDiary: (diaryId: string) => void;
   unhideDiary: (diaryId: string) => void;
+  toggleFavoriteDiary: (diaryId: string) => void;
   reportTarget: (
     targetType: SafetyReport["targetType"],
     targetId: string,
@@ -105,6 +107,7 @@ const initialState: DayDropState = {
   hiddenDiaryIds: {},
   hiddenImpressionIds: {},
   safetyReports: [],
+  favoriteDiaryIds: {},
   currentUser: seedUsers[0],
 };
 
@@ -125,6 +128,7 @@ const normalizeState = (state: DayDropState): DayDropState => ({
   hiddenDiaryIds: state.hiddenDiaryIds ?? {},
   hiddenImpressionIds: state.hiddenImpressionIds ?? {},
   safetyReports: state.safetyReports ?? [],
+  favoriteDiaryIds: state.favoriteDiaryIds ?? {},
   diaries: state.diaries.map((diary) => ({
     ...diary,
     tags: diary.tags ?? [],
@@ -807,6 +811,27 @@ export function DayDropProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const toggleFavoriteDiary = useCallback((diaryId: string) => {
+    setState((current) => {
+      const viewer = current.currentUser;
+      if (!viewer || !current.diaries.some((diary) => diary.id === diaryId)) {
+        return current;
+      }
+
+      const favorites = current.favoriteDiaryIds[viewer.id] ?? [];
+      const selected = favorites.includes(diaryId);
+      return {
+        ...current,
+        favoriteDiaryIds: {
+          ...current.favoriteDiaryIds,
+          [viewer.id]: selected
+            ? favorites.filter((id) => id !== diaryId)
+            : [...favorites, diaryId],
+        },
+      };
+    });
+  }, []);
+
   const reportTarget = useCallback(
     (
       targetType: SafetyReport["targetType"],
@@ -978,6 +1003,7 @@ export function DayDropProvider({ children }: { children: ReactNode }) {
       toggleMuteUser,
       hideDiary,
       unhideDiary,
+      toggleFavoriteDiary,
       reportTarget,
       deleteImpression,
       hideImpression,
@@ -1006,6 +1032,7 @@ export function DayDropProvider({ children }: { children: ReactNode }) {
       toggleMuteUser,
       hideDiary,
       unhideDiary,
+      toggleFavoriteDiary,
       reportTarget,
       deleteImpression,
       hideImpression,
