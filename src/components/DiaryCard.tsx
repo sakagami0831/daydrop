@@ -16,16 +16,11 @@ export function DiaryCard({ diary }: { diary: Diary }) {
     currentUser,
     users,
     getUser,
-    favoriteDiaryIds,
     toggleLike,
     hideDiary,
-    toggleFavoriteDiary,
   } = useDayDrop();
   const author = getUser(diary.authorId);
   const liked = currentUser ? diary.likedBy.includes(currentUser.id) : false;
-  const favorited = currentUser
-    ? (favoriteDiaryIds[currentUser.id] ?? []).includes(diary.id)
-    : false;
   const deliveryLabel = getDeliveryLabel(diary, users);
   const fallbackIndex =
     diary.id.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0) %
@@ -96,19 +91,6 @@ export function DiaryCard({ diary }: { diary: Diary }) {
             {"\u3044\u3044\u306d"} {diary.likedBy.length}
           </button>
         </div>
-
-        <button
-          onClick={() => toggleFavoriteDiary(diary.id)}
-          className={`mt-2 w-full rounded-full px-3 py-1.5 text-[11px] font-black ${
-            favorited
-              ? "bg-[#fff8ee] text-[#bd8648]"
-              : "border border-[#ece7fb] bg-white text-[#9b94aa]"
-          }`}
-        >
-          {favorited
-            ? "\u304a\u6c17\u306b\u5165\u308a\u6e08\u307f"
-            : "\u304a\u6c17\u306b\u5165\u308a"}
-        </button>
 
         <Link
           href={`/diary/${diary.id}`}
