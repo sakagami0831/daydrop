@@ -35,7 +35,18 @@ type DraftDiary = {
   tags?: string[];
 };
 
-type ProfileInput = Partial<Pick<User, "name" | "handle" | "title" | "bio" | "avatar">>;
+type ProfileInput = Partial<
+  Pick<
+    User,
+    | "name"
+    | "handle"
+    | "title"
+    | "bio"
+    | "avatar"
+    | "avatarImageUrl"
+    | "headerImageUrl"
+  >
+>;
 
 type DayDropState = {
   users: User[];
@@ -57,6 +68,8 @@ type DayDropState = {
 
 type DayDropContextValue = DayDropState & {
   login: (userId: string) => void;
+  emailLogin: (email: string) => User | null;
+  logout: () => void;
   updateProfile: (input: ProfileInput) => void;
   createDiary: (draft: DraftDiary) => Diary | null;
   addImpression: (diaryId: string, body: string) => boolean;
@@ -105,7 +118,7 @@ const initialState: DayDropState = {
   hiddenDiaryIds: {},
   hiddenImpressionIds: {},
   safetyReports: [],
-  currentUser: seedUsers[0],
+  currentUser: null,
 };
 
 const makeId = (prefix: string) =>
@@ -132,6 +145,11 @@ const normalizeState = (state: DayDropState): DayDropState => ({
   notifications: state.notifications.map((notification) => ({
     ...notification,
     type: notification.type ?? "diary_delivered",
+  })),
+  users: state.users.map((user) => ({
+    ...user,
+    avatarImageUrl: user.avatarImageUrl ?? "",
+    headerImageUrl: user.headerImageUrl ?? "",
   })),
 });
 
@@ -175,6 +193,73 @@ export function DayDropProvider({ children }: { children: ReactNode }) {
     setState((current) => ({
       ...current,
       currentUser: current.users.find((user) => user.id === userId) ?? null,
+    }));
+  }, []);
+
+  const emailLogin = useCallback((rawEmail: string) => {
+    const email = rawEmail.trim().toLowerCase();
+    if (!email || !email.includes("@")) {
+      return null;
+    }
+
+    const baseName = email.split("@")[0] || "daydrop";
+    const name = baseName
+      .replace(/[._-]+/g, " ")
+      .replace(/\b\w/g, (char) => char.toUpperCase());
+    const handle = baseName.replace(/[^a-z0-9_]/g, "").slice(0, 18) || "daydrop";
+    let nextUser: User | null = null;
+
+    setState((current) => {
+      const existing = current.users.find((user) => user.email === email);
+      if (existing) {
+        nextUser = existing;
+        return {
+          ...current,
+          currentUser: existing,
+        };
+      }
+
+      const createdAt = new Date().toISOString();
+      const user: User = {
+        id: makeId("u"),
+        email,
+        name,
+        handle,
+        title: "\u307e\u3063\u305f\u308a \u3067\u3044\u3069\u308d\u6c11",
+        bio: "\u4eca\u65e5\u306e\u65e5\u8a18\u3092\u5c4a\u3051\u308b\u6e96\u5099\u4e2d\u3067\u3059\u3002",
+        avatar: name.slice(0, 1).toUpperCase(),
+        avatarImageUrl: "",
+        headerImageUrl: "",
+        followers: [],
+        following: [],
+        coinBalance: 100,
+      };
+      nextUser = user;
+
+      return {
+        ...current,
+        users: [...current.users, user],
+        currentUser: user,
+        coinTransactions: [
+          ...current.coinTransactions,
+          {
+            id: makeId("c"),
+            userId: user.id,
+            amount: 100,
+            reason: "initial_bonus",
+            createdAt,
+          },
+        ],
+      };
+    });
+
+    return nextUser;
+  }, []);
+
+  const logout = useCallback(() => {
+    setState((current) => ({
+      ...current,
+      currentUser: null,
     }));
   }, []);
 
@@ -962,6 +1047,8 @@ export function DayDropProvider({ children }: { children: ReactNode }) {
     () => ({
       ...state,
       login,
+      emailLogin,
+      logout,
       updateProfile,
       createDiary,
       addImpression,
@@ -990,6 +1077,8 @@ export function DayDropProvider({ children }: { children: ReactNode }) {
     [
       state,
       login,
+      emailLogin,
+      logout,
       updateProfile,
       createDiary,
       addImpression,
