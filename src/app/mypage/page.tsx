@@ -185,43 +185,48 @@ export default function MyPage() {
           <ProfilePanel />
         </div>
 
-        <div className="grid min-w-0 gap-3">
-          <section className="rounded-2xl border border-[#ece7fb] bg-white/90 p-4 shadow-[0_10px_26px_rgba(126,112,174,0.08)]">
+        <div className="grid min-w-0 gap-4">
+          <section className="rounded-3xl border border-[#ece7fb] bg-white/90 p-5 shadow-[0_14px_34px_rgba(126,112,174,0.09)]">
             <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
               <div>
                 <p className="text-xs font-black text-[#8b7cf6]">
                   {"\u30de\u30a4\u30da\u30fc\u30b8"}
                 </p>
                 <h1 className="text-2xl font-black">
-                  {"\u914d\u4fe1\u8005\u30d7\u30ed\u30d5\u30a3\u30fc\u30eb"}
+                  {"\u30de\u30a4\u30d7\u30ed\u30d5\u30a3\u30fc\u30eb"}
                 </h1>
               </div>
-              <span className="rounded-full bg-[#f2efff] px-3 py-1 text-xs font-black text-[#7c6ee6]">
-                {"\u6240\u6301\u30b3\u30a4\u30f3"} C {currentUser.coinBalance}
-              </span>
-              <Link
-                href="/settings"
-                className="rounded-full bg-white px-3 py-1 text-xs font-black text-[#7c6ee6] ring-1 ring-[#ece7fb]"
-              >
-                {"\u5b89\u5168\u8a2d\u5b9a"}
-              </Link>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-full bg-[#fff8ee] px-3 py-1 text-xs font-black text-[#bd8648]">
+                  {"\u6240\u6301\u30b3\u30a4\u30f3"} C {currentUser.coinBalance}
+                </span>
+                <Link
+                  href="/settings"
+                  className="rounded-full bg-white px-3 py-1 text-xs font-black text-[#7c6ee6] ring-1 ring-[#ece7fb]"
+                >
+                  {"\u5b89\u5168\u8a2d\u5b9a"}
+                </Link>
+              </div>
             </div>
 
-            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-              <ProfileMetric label={"\u7dcf\u65e5\u8a18\u6570"} value={stats.diaryCount} />
-              <ProfileMetric label={"\u7dcf\u611f\u60f3\u6570"} value={stats.impressionCount} />
-              <ProfileMetric label={"\u7dcf\u3044\u3044\u306d\u6570"} value={stats.likeCount} />
-              <ProfileMetric label={"\u9023\u7d9a\u30ed\u30b0\u30a4\u30f3"} value={`${stats.loginStreak}\u65e5`} />
-              <ProfileMetric label={"\u30d5\u30a9\u30ed\u30ef\u30fc"} value={stats.followerCount} />
-              <ProfileMetric label={"\u30d5\u30a9\u30ed\u30fc"} value={stats.followingCount} />
-              <ProfileMetric label={"\u79f0\u53f7\u89e3\u653e"} value={unlockedTitles.length} />
-              <ProfileMetric label={"\u73fe\u5728\u306e\u79f0\u53f7"} value={currentUser.title} />
-              <ProfileMetric label={"\u73fe\u5728\u306e\u30c6\u30fc\u30de"} value={itemLabel(equipped.theme)} />
-              <ProfileMetric label={"\u73fe\u5728\u306e\u30d8\u30c3\u30c0\u30fc"} value={itemLabel(equipped.header)} />
+            <div className="grid gap-2 sm:grid-cols-4">
+              <ProfileBadge label={"\u7dcf\u65e5\u8a18"} value={stats.diaryCount} />
+              <ProfileBadge label={"\u7dcf\u611f\u60f3"} value={stats.impressionCount} />
+              <ProfileBadge label={"\u7dcf\u3044\u3044\u306d"} value={stats.likeCount} />
+              <ProfileBadge label={"\u9023\u7d9a"} value={`${stats.loginStreak}\u65e5`} />
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-2 rounded-3xl bg-[#fbfaff] p-3">
+              <MiniProfileNote label={"\u30d5\u30a9\u30ed\u30ef\u30fc"} value={stats.followerCount} />
+              <MiniProfileNote label={"\u30d5\u30a9\u30ed\u30fc"} value={stats.followingCount} />
+              <MiniProfileNote label={"\u79f0\u53f7"} value={`${unlockedTitles.length}\u4ef6\u89e3\u653e`} />
+              <MiniProfileNote label={"\u73fe\u5728"} value={currentUser.title} />
+              <MiniProfileNote label={"\u30c6\u30fc\u30de"} value={itemLabel(equipped.theme)} />
+              <MiniProfileNote label={"\u30d8\u30c3\u30c0\u30fc"} value={itemLabel(equipped.header)} />
             </div>
           </section>
 
-          <section className="rounded-2xl border border-[#ece7fb] bg-white/90 p-4 shadow-[0_10px_26px_rgba(126,112,174,0.08)]">
+          <section className="rounded-3xl border border-[#ece7fb] bg-white/90 p-5 shadow-[0_14px_34px_rgba(126,112,174,0.09)]">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <div>
                 <p className="text-xs font-black text-[#8b7cf6]">
@@ -231,25 +236,36 @@ export default function MyPage() {
                   {"\u80b2\u3063\u3066\u3044\u304f\u79f0\u53f7"}
                 </h2>
               </div>
-              {notice ? (
-                <span className="rounded-full bg-[#f2efff] px-3 py-1 text-xs font-black text-[#7c6ee6]">
-                  {notice}
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-full bg-[#fff8ee] px-3 py-1 text-xs font-black text-[#bd8648]">
+                  {"\u79f0\u53f7"}
+                  {unlockedTitles.length}
+                  {"\u4ef6\u89e3\u653e"}
                 </span>
-              ) : null}
+                {notice ? (
+                  <span className="rounded-full bg-[#f2efff] px-3 py-1 text-xs font-black text-[#7c6ee6]">
+                    {notice}
+                  </span>
+                ) : null}
+              </div>
             </div>
 
             <div className="grid gap-2 md:grid-cols-2">
               {achievements.map((achievement) => (
                 <article
                   key={achievement.id}
-                  className={`rounded-2xl border p-3 ${
+                  className={`relative overflow-hidden rounded-3xl border p-4 shadow-sm ${
                     achievement.unlocked
-                      ? "border-[#ded7fb] bg-[#fbfaff]"
+                      ? "border-[#ded7fb] bg-[linear-gradient(135deg,#fff8ee,#fbfaff_52%,#f2efff)]"
                       : "border-[#ece7fb] bg-white"
                   }`}
                 >
+                  <div className="pointer-events-none absolute -right-7 -top-7 size-20 rounded-full bg-[#f2efff]/70" />
                   <div className="flex items-start justify-between gap-2">
-                    <div>
+                    <div className="min-w-0">
+                      <p className="mb-2 inline-flex rounded-full bg-white/80 px-2.5 py-1 text-[10px] font-black text-[#8b7cf6]">
+                        {"\u5b9f\u7e3e\u30d0\u30c3\u30b8"}
+                      </p>
                       <h3 className="font-black">{achievement.label}</h3>
                       <p className="mt-1 text-xs font-bold text-[#8b7cf6]">
                         {achievement.title}
@@ -258,19 +274,19 @@ export default function MyPage() {
                     <span
                       className={`rounded-full px-2.5 py-1 text-[11px] font-black ${
                         achievement.unlocked
-                          ? "bg-[#edf8f0] text-[#4d9a62]"
+                          ? "bg-[#fff8ee] text-[#bd8648]"
                           : "bg-[#f2efff] text-[#7c6ee6]"
                       }`}
                     >
                       {achievement.unlocked
-                        ? "\u9054\u6210\u6e08\u307f"
+                        ? "\u79f0\u53f7GET"
                         : "\u672a\u9054\u6210"}
                     </span>
                   </div>
                   <button
                     onClick={() => selectTitle(achievement.title)}
                     disabled={!achievement.unlocked}
-                    className="mt-3 w-full rounded-full bg-[#8b7cf6] px-4 py-2 text-xs font-black text-white disabled:bg-[#d6cff8]"
+                    className="mt-3 w-full rounded-full bg-[#8b7cf6] px-4 py-2 text-xs font-black text-white shadow-[0_8px_18px_rgba(139,124,246,0.18)] disabled:bg-[#d6cff8]"
                   >
                     {currentUser.title === achievement.title
                       ? "\u9078\u629e\u4e2d"
@@ -281,37 +297,37 @@ export default function MyPage() {
             </div>
           </section>
 
-          <section className="min-w-0 rounded-2xl border border-[#ece7fb] bg-white/90 p-4 shadow-[0_10px_26px_rgba(126,112,174,0.08)]">
-          <div className="mb-3 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-black text-[#8b7cf6]">
-                {"\u30de\u30a4\u30da\u30fc\u30b8"}
-              </p>
-              <h1 className="text-xl font-black">{"\u81ea\u5206\u306e\u65e5\u8a18"}</h1>
+          <section className="min-w-0 rounded-3xl border border-[#ece7fb] bg-white/90 p-5 shadow-[0_14px_34px_rgba(126,112,174,0.09)]">
+            <div className="mb-3 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-black text-[#8b7cf6]">
+                  {"\u30de\u30a4\u30da\u30fc\u30b8"}
+                </p>
+                <h1 className="text-xl font-black">{"\u81ea\u5206\u306e\u65e5\u8a18"}</h1>
+              </div>
+              <span className="rounded-full bg-[#f0edff] px-3 py-1 text-xs font-black text-[#7c6ee6]">
+                {myDiaries.length}
+                {"\u4ef6"}
+              </span>
             </div>
-            <span className="rounded-full bg-[#f0edff] px-3 py-1 text-xs font-black text-[#7c6ee6]">
-              {myDiaries.length}
-              {"\u4ef6"}
-            </span>
-          </div>
 
-          <div className="grid gap-3 md:grid-cols-2 2xl:grid-cols-3">
-            {myDiaries.length === 0 ? (
-              <p className="rounded-2xl bg-[#fbfaff] p-4 text-sm text-[#9b94aa] md:col-span-2">
-                {"\u307e\u3060\u65e5\u8a18\u3092\u66f8\u3044\u3066\u3044\u307e\u305b\u3093\u3002"}
-              </p>
-            ) : (
-              myDiaries.map((diary) => <DiaryCard key={diary.id} diary={diary} />)
-            )}
-          </div>
-        </section>
+            <div className="grid gap-3 md:grid-cols-2 2xl:grid-cols-3">
+              {myDiaries.length === 0 ? (
+                <p className="rounded-3xl bg-[#fbfaff] p-4 text-sm text-[#9b94aa] md:col-span-2">
+                  {"\u307e\u3060\u65e5\u8a18\u3092\u66f8\u3044\u3066\u3044\u307e\u305b\u3093\u3002"}
+                </p>
+              ) : (
+                myDiaries.map((diary) => <DiaryCard key={diary.id} diary={diary} />)
+              )}
+            </div>
+          </section>
         </div>
       </div>
     </AppShell>
   );
 }
 
-function ProfileMetric({
+function ProfileBadge({
   label,
   value,
 }: {
@@ -319,9 +335,26 @@ function ProfileMetric({
   value: number | string;
 }) {
   return (
-    <div className="rounded-2xl bg-[#fbfaff] p-3">
-      <p className="text-[11px] font-black text-[#9b94aa]">{label}</p>
-      <p className="mt-1 truncate text-lg font-black text-[#2f2b3b]">{value}</p>
+    <div className="rounded-full border border-[#ece7fb] bg-white px-4 py-3 text-center shadow-[0_8px_18px_rgba(126,112,174,0.08)]">
+      <p className="truncate text-[11px] font-black text-[#9b94aa]">{label}</p>
+      <p className="mt-0.5 truncate text-lg font-black text-[#7c6ee6]">
+        {value}
+      </p>
     </div>
+  );
+}
+
+function MiniProfileNote({
+  label,
+  value,
+}: {
+  label: string;
+  value: number | string;
+}) {
+  return (
+    <span className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-bold text-[#746d82] ring-1 ring-[#ece7fb]">
+      <span className="shrink-0 text-[#aaa2bd]">{label}</span>
+      <span className="truncate font-black text-[#4a4458]">{value}</span>
+    </span>
   );
 }
