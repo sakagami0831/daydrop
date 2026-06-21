@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { AppShell } from "@/components/AppShell";
 import { DiaryCard } from "@/components/DiaryCard";
-import { ProfilePanel } from "@/components/ProfilePanel";
 import { useDayDrop } from "@/lib/store";
 
 const toDayKey = (date = new Date()) => date.toISOString().slice(0, 10);
@@ -60,6 +59,75 @@ const achievementItems = [
   },
 ];
 
+const decorationItems = [
+  {
+    id: "theme-lavender",
+    name: "\u30e9\u30d9\u30f3\u30c0\u30fc",
+    slot: "theme",
+    tone: "bg-[#f2efff]",
+  },
+  {
+    id: "theme-sakura",
+    name: "\u685c",
+    slot: "theme",
+    tone: "bg-[#fff1f6]",
+  },
+  {
+    id: "theme-cloud",
+    name: "\u96f2",
+    slot: "theme",
+    tone: "bg-[#f2f8ff]",
+  },
+  {
+    id: "theme-notebook",
+    name: "\u65e5\u8a18\u5e33",
+    slot: "theme",
+    tone: "bg-[#fff9ed]",
+  },
+  {
+    id: "theme-fanletter",
+    name: "\u30d5\u30a1\u30f3\u30ec\u30bf\u30fc",
+    slot: "theme",
+    tone: "bg-[#fff8ee]",
+  },
+  {
+    id: "header-streamer",
+    name: "\u914d\u4fe1\u8005\u30d8\u30c3\u30c0\u30fc",
+    slot: "header",
+    tone: "bg-[#eef7ff]",
+  },
+  {
+    id: "header-event",
+    name: "\u544a\u77e5\u30d8\u30c3\u30c0\u30fc",
+    slot: "header",
+    tone: "bg-[#f4fff5]",
+  },
+  {
+    id: "header-thanks",
+    name: "\u3042\u308a\u304c\u3068\u3046\u30d8\u30c3\u30c0\u30fc",
+    slot: "header",
+    tone: "bg-[#fff7fb]",
+  },
+];
+
+const titlePrefixOptions = [
+  "\u6df1\u591c\u306e",
+  "\u3075\u308f\u3075\u308f",
+  "\u6c17\u307e\u3050\u308c",
+  "\u5922\u898b\u308b",
+  "\u307e\u3063\u305f\u308a",
+];
+
+const titleSuffixOptions = [
+  "\u65e5\u8a18\u5c4b\u3055\u3093",
+  "\u914d\u4fe1\u8005",
+  "\u611f\u60f3\u8077\u4eba",
+  "\u304a\u8fd4\u4e8b\u4fc2",
+  "\u3067\u3044\u3069\u308d\u6c11",
+];
+
+const avatarOptions = ["S", "M", "H", "Y", "D", "\u2606", "\u2661", "\u25cb"];
+
 type ProfileStats = {
   diaryCount: number;
   impressionCount: number;
@@ -95,8 +163,44 @@ export default function MyPage() {
     purchasedShopItemIds,
     equippedShopItemIds,
     updateProfile,
+    equipShopItem,
   } = useDayDrop();
   const [notice, setNotice] = useState("");
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState(currentUser?.name ?? "");
+  const [handle, setHandle] = useState(currentUser?.handle ?? "");
+  const [bio, setBio] = useState(currentUser?.bio ?? "");
+  const [avatar, setAvatar] = useState(currentUser?.avatar ?? "D");
+  const [titlePrefix, setTitlePrefix] = useState(() => {
+    const prefix = currentUser?.title.split(" ")[0];
+    return prefix && titlePrefixOptions.includes(prefix)
+      ? prefix
+      : titlePrefixOptions[0];
+  });
+  const [titleSuffix, setTitleSuffix] = useState(() => {
+    const suffix = currentUser?.title.split(" ").slice(1).join(" ");
+    return suffix && titleSuffixOptions.includes(suffix)
+      ? suffix
+      : titleSuffixOptions[1];
+  });
+  const [selectedBadgeIds, setSelectedBadgeIds] = useState<string[]>(() => {
+    if (typeof window === "undefined" || !currentUser) {
+      return [];
+    }
+
+    const saved = window.localStorage.getItem(
+      `daydrop-profile-display-${currentUser.id}`,
+    );
+    if (!saved) {
+      return [];
+    }
+
+    try {
+      return JSON.parse(saved) as string[];
+    } catch {
+      return [];
+    }
+  });
   const myDiaries = useMemo(
     () =>
       currentUser
@@ -153,7 +257,24 @@ export default function MyPage() {
   const unlockedTitles = achievements
     .filter((achievement) => achievement.unlocked)
     .map((achievement) => achievement.title);
+  const metricOptions = [
+    { id: "diaryCount", label: "\u65e5\u8a18", value: stats.diaryCount },
+    { id: "impressionCount", label: "\u611f\u60f3", value: stats.impressionCount },
+    { id: "likeCount", label: "\u3044\u3044\u306d", value: stats.likeCount },
+    { id: "loginStreak", label: "\u9023\u7d9a", value: `${stats.loginStreak}\u65e5` },
+    { id: "followerCount", label: "\u30d5\u30a9\u30ed\u30ef\u30fc", value: stats.followerCount },
+    { id: "followingCount", label: "\u30d5\u30a9\u30ed\u30fc", value: stats.followingCount },
+  ];
+  const visibleMetrics = metricOptions.filter((metric) =>
+    selectedBadgeIds.includes(metric.id),
+  );
+  const purchased = purchasedShopItemIds[currentUser.id] ?? [];
   const equipped = equippedShopItemIds[currentUser.id] ?? {};
+  const ownedDecorations = decorationItems.filter((item) =>
+    purchased.includes(item.id),
+  );
+  const themeItems = ownedDecorations.filter((item) => item.slot === "theme");
+  const headerItems = ownedDecorations.filter((item) => item.slot === "header");
   const itemLabel = (itemId: string | undefined) => {
     if (!itemId) {
       return "\u672a\u88c5\u5099";
@@ -164,36 +285,184 @@ export default function MyPage() {
       .replace("card-", "")
       .replace("bg-", "");
   };
+  const activeDecorations = [
+    equipped.header,
+    equipped.theme,
+    equipped.background,
+    ...purchased,
+  ].filter(Boolean);
+  const headerClass = activeDecorations.includes("header-event")
+    ? "bg-[linear-gradient(135deg,#fff1f6,#f2efff_45%,#f4fff5)]"
+    : activeDecorations.includes("header-thanks")
+      ? "bg-[linear-gradient(135deg,#fff7fb,#fff8ee_48%,#f2efff)]"
+      : activeDecorations.includes("header-streamer")
+        ? "bg-[linear-gradient(135deg,#eef7ff,#f2efff_55%,#fff7fb)]"
+        : "bg-[linear-gradient(135deg,#f0edff,#fff3f8_55%,#eef7ff)]";
+  const previewClass = activeDecorations.includes("theme-fanletter")
+    ? "bg-[linear-gradient(135deg,#fff8ee,#ffffff_52%,#fff1f6)]"
+    : activeDecorations.includes("theme-sakura")
+      ? "bg-[linear-gradient(135deg,#fff1f6,#ffffff_55%,#f2efff)]"
+      : activeDecorations.includes("theme-cloud")
+        ? "bg-[linear-gradient(135deg,#eef7ff,#ffffff_55%,#fbfaff)]"
+        : activeDecorations.includes("theme-notebook")
+          ? "bg-[linear-gradient(135deg,#fff9ed,#ffffff_55%,#f2efff)]"
+          : "bg-white";
 
-  const selectTitle = (title: string) => {
-    if (!unlockedTitles.includes(title)) {
-      return;
-    }
+  const applyTitleCombo = (prefix = titlePrefix, suffix = titleSuffix) => {
+    const title = `${prefix} ${suffix}`;
     updateProfile({
       name: currentUser.name,
       handle: currentUser.handle,
       title,
       bio: currentUser.bio,
+      avatar: currentUser.avatar,
     });
     setNotice(`\u4e8c\u3064\u540d\u3092\u300c${title}\u300d\u306b\u5909\u66f4\u3057\u307e\u3057\u305f\u3002`);
   };
 
+  const saveProfile = () => {
+    updateProfile({
+      name: name.trim() || currentUser.name,
+      handle: handle.trim() || currentUser.handle,
+      title: currentUser.title,
+      bio: bio.trim(),
+      avatar,
+    });
+    setEditing(false);
+    setNotice("\u30d7\u30ed\u30d5\u30a3\u30fc\u30eb\u3092\u4fdd\u5b58\u3057\u307e\u3057\u305f\u3002");
+  };
+
+  const equipDecoration = (itemId: string, slot: string) => {
+    const ok = equipShopItem(itemId, slot);
+    setNotice(
+      ok
+        ? "\u30d7\u30ed\u30d5\u30a3\u30fc\u30eb\u306b\u88c5\u5099\u3057\u307e\u3057\u305f\u3002"
+        : "\u88c5\u5099\u3067\u304d\u307e\u305b\u3093\u3067\u3057\u305f\u3002",
+    );
+  };
+
+  const toggleDisplayBadge = (badgeId: string) => {
+    const next = selectedBadgeIds.includes(badgeId)
+      ? selectedBadgeIds.filter((id) => id !== badgeId)
+      : [...selectedBadgeIds, badgeId];
+    setSelectedBadgeIds(next);
+    window.localStorage.setItem(
+      `daydrop-profile-display-${currentUser.id}`,
+      JSON.stringify(next),
+    );
+  };
+
   return (
     <AppShell>
-      <div className="grid gap-3 xl:grid-cols-[340px_minmax(0,1fr)]">
-        <div className="min-w-0">
-          <ProfilePanel />
-        </div>
+      <div className="mx-auto grid max-w-6xl gap-4">
+          <section className={`overflow-hidden rounded-3xl border border-[#ece7fb] ${previewClass} shadow-[0_18px_42px_rgba(126,112,174,0.12)]`}>
+            <div className={`h-32 ${headerClass}`} />
+            <div className="-mt-12 grid gap-5 px-5 pb-5 lg:grid-cols-[minmax(0,1fr)_260px]">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-end justify-between gap-3">
+                  <div className="grid size-24 place-items-center rounded-full border-4 border-white bg-[#f4efff] text-4xl font-black text-[#8b7cf6] shadow-[0_12px_24px_rgba(126,112,174,0.16)]">
+                    {avatar}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => setEditing((value) => !value)}
+                      className="rounded-full bg-white px-4 py-2 text-xs font-black text-[#7c6ee6] shadow-sm ring-1 ring-[#ece7fb]"
+                    >
+                      {editing ? "\u9589\u3058\u308b" : "\u7de8\u96c6"}
+                    </button>
+                    <Link
+                      href="/shop"
+                      className="rounded-full bg-[#8b7cf6] px-4 py-2 text-xs font-black text-white shadow-[0_10px_20px_rgba(139,124,246,0.2)]"
+                    >
+                      {"\u3082\u3063\u3068\u98fe\u308b"}
+                    </Link>
+                  </div>
+                </div>
 
-        <div className="grid min-w-0 gap-4">
+                {editing ? (
+                  <div className="mt-4 grid max-w-xl gap-2 rounded-3xl bg-white/80 p-4">
+                    <input
+                      value={name}
+                      onChange={(event) => setName(event.target.value)}
+                      className="rounded-2xl border border-[#ece7fb] px-4 py-2 text-sm outline-none focus:border-[#9b8be8]"
+                      aria-label={"\u540d\u524d"}
+                    />
+                    <input
+                      value={handle}
+                      onChange={(event) => setHandle(event.target.value)}
+                      className="rounded-2xl border border-[#ece7fb] px-4 py-2 text-sm outline-none focus:border-[#9b8be8]"
+                      aria-label={"\u30cf\u30f3\u30c9\u30eb"}
+                    />
+                    <textarea
+                      value={bio}
+                      onChange={(event) => setBio(event.target.value)}
+                      className="min-h-24 rounded-2xl border border-[#ece7fb] px-4 py-2 text-sm outline-none focus:border-[#9b8be8]"
+                      aria-label={"\u81ea\u5df1\u7d39\u4ecb"}
+                    />
+                    <button
+                      onClick={saveProfile}
+                      className="rounded-full bg-[#8b7cf6] px-4 py-2 text-sm font-black text-white"
+                    >
+                      {"\u4fdd\u5b58"}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="mt-4">
+                    <p className="text-xs font-black tracking-[0.2em] text-[#9b94aa]">
+                      {"\u308f\u305f\u3057\u306e\u30da\u30fc\u30b8"}
+                    </p>
+                    <h1 className="mt-1 text-3xl font-black text-[#2f2b3b]">
+                      {currentUser.name}
+                    </h1>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <span className="rounded-full bg-[#f2efff] px-3 py-1 text-xs font-black text-[#7c6ee6]">
+                        {`\u300c${currentUser.title}\u300d`}
+                      </span>
+                      <span className="rounded-full bg-[#fff8ee] px-3 py-1 text-xs font-black text-[#bd8648]">
+                        {itemLabel(equipped.theme)}
+                      </span>
+                      <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-[#8b7cf6] ring-1 ring-[#ece7fb]">
+                        {itemLabel(equipped.header)}
+                      </span>
+                    </div>
+                    <p className="mt-4 max-w-2xl rounded-3xl bg-white/75 p-4 text-sm leading-7 text-[#6f6a7e]">
+                      {currentUser.bio || "\u81ea\u5df1\u7d39\u4ecb\u3092\u66f8\u3044\u3066\u3001\u30da\u30fc\u30b8\u3092\u80b2\u3066\u3088\u3046\u3002"}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="grid content-end gap-2 rounded-3xl bg-white/75 p-4">
+                <p className="text-xs font-black text-[#8b7cf6]">
+                  {"\u8868\u793a\u4e2d\u306e\u30d0\u30c3\u30b8"}
+                </p>
+                {visibleMetrics.length === 0 ? (
+                  <p className="rounded-3xl bg-white px-3 py-2 text-xs font-bold text-[#9b94aa]">
+                    {"\u8868\u793a\u3059\u308b\u8a18\u9332\u3092\u9078\u3076\u3068\u3001\u3053\u3053\u306b\u5c0f\u3055\u304f\u51fa\u307e\u3059\u3002"}
+                  </p>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {visibleMetrics.map((metric) => (
+                      <ProfileBadge
+                        key={metric.id}
+                        label={metric.label}
+                        value={metric.value}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
+
           <section className="rounded-3xl border border-[#ece7fb] bg-white/90 p-5 shadow-[0_14px_34px_rgba(126,112,174,0.09)]">
             <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
               <div>
                 <p className="text-xs font-black text-[#8b7cf6]">
-                  {"\u30de\u30a4\u30da\u30fc\u30b8"}
+                  {"\u30ab\u30b9\u30bf\u30e0"}
                 </p>
                 <h1 className="text-2xl font-black">
-                  {"\u30de\u30a4\u30d7\u30ed\u30d5\u30a3\u30fc\u30eb"}
+                  {"\u30d7\u30ed\u30d5\u30a3\u30fc\u30eb\u306b\u51fa\u3059\u3082\u306e"}
                 </h1>
               </div>
               <div className="flex flex-wrap items-center gap-2">
@@ -209,93 +478,154 @@ export default function MyPage() {
               </div>
             </div>
 
-            <div className="grid gap-2 sm:grid-cols-4">
-              <ProfileBadge label={"\u7dcf\u65e5\u8a18"} value={stats.diaryCount} />
-              <ProfileBadge label={"\u7dcf\u611f\u60f3"} value={stats.impressionCount} />
-              <ProfileBadge label={"\u7dcf\u3044\u3044\u306d"} value={stats.likeCount} />
-              <ProfileBadge label={"\u9023\u7d9a"} value={`${stats.loginStreak}\u65e5`} />
-            </div>
-
-            <div className="mt-4 flex flex-wrap gap-2 rounded-3xl bg-[#fbfaff] p-3">
-              <MiniProfileNote label={"\u30d5\u30a9\u30ed\u30ef\u30fc"} value={stats.followerCount} />
-              <MiniProfileNote label={"\u30d5\u30a9\u30ed\u30fc"} value={stats.followingCount} />
-              <MiniProfileNote label={"\u79f0\u53f7"} value={`${unlockedTitles.length}\u4ef6\u89e3\u653e`} />
-              <MiniProfileNote label={"\u73fe\u5728"} value={currentUser.title} />
-              <MiniProfileNote label={"\u30c6\u30fc\u30de"} value={itemLabel(equipped.theme)} />
-              <MiniProfileNote label={"\u30d8\u30c3\u30c0\u30fc"} value={itemLabel(equipped.header)} />
-            </div>
-          </section>
-
-          <section className="rounded-3xl border border-[#ece7fb] bg-white/90 p-5 shadow-[0_14px_34px_rgba(126,112,174,0.09)]">
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-              <div>
+            <div className="grid gap-4 lg:grid-cols-3">
+              <div className="rounded-3xl bg-[#fbfaff] p-4">
                 <p className="text-xs font-black text-[#8b7cf6]">
-                  {"\u5b9f\u7e3e"}
+                  {"\u30a2\u30a4\u30b3\u30f3"}
                 </p>
-                <h2 className="text-xl font-black">
-                  {"\u80b2\u3063\u3066\u3044\u304f\u79f0\u53f7"}
-                </h2>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-full bg-[#fff8ee] px-3 py-1 text-xs font-black text-[#bd8648]">
-                  {"\u79f0\u53f7"}
-                  {unlockedTitles.length}
-                  {"\u4ef6\u89e3\u653e"}
-                </span>
-                {notice ? (
-                  <span className="rounded-full bg-[#f2efff] px-3 py-1 text-xs font-black text-[#7c6ee6]">
-                    {notice}
-                  </span>
-                ) : null}
-              </div>
-            </div>
-
-            <div className="grid gap-2 md:grid-cols-2">
-              {achievements.map((achievement) => (
-                <article
-                  key={achievement.id}
-                  className={`relative overflow-hidden rounded-3xl border p-4 shadow-sm ${
-                    achievement.unlocked
-                      ? "border-[#ded7fb] bg-[linear-gradient(135deg,#fff8ee,#fbfaff_52%,#f2efff)]"
-                      : "border-[#ece7fb] bg-white"
-                  }`}
-                >
-                  <div className="pointer-events-none absolute -right-7 -top-7 size-20 rounded-full bg-[#f2efff]/70" />
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="mb-2 inline-flex rounded-full bg-white/80 px-2.5 py-1 text-[10px] font-black text-[#8b7cf6]">
-                        {"\u5b9f\u7e3e\u30d0\u30c3\u30b8"}
-                      </p>
-                      <h3 className="font-black">{achievement.label}</h3>
-                      <p className="mt-1 text-xs font-bold text-[#8b7cf6]">
-                        {achievement.title}
-                      </p>
-                    </div>
-                    <span
-                      className={`rounded-full px-2.5 py-1 text-[11px] font-black ${
-                        achievement.unlocked
-                          ? "bg-[#fff8ee] text-[#bd8648]"
-                          : "bg-[#f2efff] text-[#7c6ee6]"
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {avatarOptions.map((option) => (
+                    <button
+                      key={option}
+                      onClick={() => {
+                        setAvatar(option);
+                        updateProfile({ avatar: option });
+                      }}
+                      className={`grid size-10 place-items-center rounded-full text-sm font-black ${
+                        avatar === option
+                          ? "bg-[#8b7cf6] text-white shadow-[0_8px_18px_rgba(139,124,246,0.2)]"
+                          : "bg-white text-[#8b7cf6] ring-1 ring-[#ece7fb]"
                       }`}
                     >
-                      {achievement.unlocked
-                        ? "\u79f0\u53f7GET"
-                        : "\u672a\u9054\u6210"}
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => selectTitle(achievement.title)}
-                    disabled={!achievement.unlocked}
-                    className="mt-3 w-full rounded-full bg-[#8b7cf6] px-4 py-2 text-xs font-black text-white shadow-[0_8px_18px_rgba(139,124,246,0.18)] disabled:bg-[#d6cff8]"
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-3xl bg-[#fbfaff] p-4">
+                <p className="text-xs font-black text-[#8b7cf6]">
+                  {"\u4e8c\u3064\u540d"}
+                </p>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <select
+                    value={titlePrefix}
+                    onChange={(event) => {
+                      setTitlePrefix(event.target.value);
+                      applyTitleCombo(event.target.value, titleSuffix);
+                    }}
+                    className="rounded-2xl border border-[#ece7fb] bg-white px-3 py-2 text-xs font-black outline-none"
                   >
-                    {currentUser.title === achievement.title
-                      ? "\u9078\u629e\u4e2d"
-                      : "\u4e8c\u3064\u540d\u306b\u3059\u308b"}
-                  </button>
-                </article>
-              ))}
+                    {titlePrefixOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={titleSuffix}
+                    onChange={(event) => {
+                      setTitleSuffix(event.target.value);
+                      applyTitleCombo(titlePrefix, event.target.value);
+                    }}
+                    className="rounded-2xl border border-[#ece7fb] bg-white px-3 py-2 text-xs font-black outline-none"
+                  >
+                    {titleSuffixOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <p className="mt-2 rounded-full bg-white px-3 py-1.5 text-center text-xs font-black text-[#7c6ee6]">
+                  {titlePrefix} {titleSuffix}
+                </p>
+              </div>
+
+              <div className="rounded-3xl bg-[#fbfaff] p-4">
+                <p className="text-xs font-black text-[#8b7cf6]">
+                  {"\u8868\u793a\u30d0\u30c3\u30b8"}
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {metricOptions.map((metric) => {
+                    const selected = selectedBadgeIds.includes(metric.id);
+                    return (
+                      <button
+                        key={metric.id}
+                        onClick={() => toggleDisplayBadge(metric.id)}
+                        className={`rounded-full px-3 py-1.5 text-xs font-black ${
+                          selected
+                            ? "bg-[#8b7cf6] text-white"
+                            : "bg-white text-[#7c6ee6] ring-1 ring-[#ece7fb]"
+                        }`}
+                      >
+                        {metric.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           </section>
+
+          <section className="grid gap-4 lg:grid-cols-2">
+            <DecorationPicker
+              title={"\u30c6\u30fc\u30de\u3092\u9078\u3076"}
+              items={themeItems}
+              emptyText={"\u307e\u3060\u8cfc\u5165\u6e08\u307f\u30c6\u30fc\u30de\u304c\u3042\u308a\u307e\u305b\u3093\u3002"}
+              equipped={equipped}
+              onEquip={equipDecoration}
+            />
+            <DecorationPicker
+              title={"\u30d8\u30c3\u30c0\u30fc\u3092\u9078\u3076"}
+              items={headerItems}
+              emptyText={"\u307e\u3060\u8cfc\u5165\u6e08\u307f\u30d8\u30c3\u30c0\u30fc\u304c\u3042\u308a\u307e\u305b\u3093\u3002"}
+              equipped={equipped}
+              onEquip={equipDecoration}
+            />
+          </section>
+
+          <details className="rounded-3xl border border-[#ece7fb] bg-white/90 p-5 shadow-[0_14px_34px_rgba(126,112,174,0.09)]">
+            <summary className="cursor-pointer list-none">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <p className="text-xs font-black text-[#8b7cf6]">
+                    {"\u79f0\u53f7\u30fb\u5b9f\u7e3e"}
+                  </p>
+                  <h2 className="text-lg font-black">
+                    {"\u80b2\u3063\u3066\u3044\u304f\u79f0\u53f7"}
+                  </h2>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="rounded-full bg-[#fff8ee] px-3 py-1 text-xs font-black text-[#bd8648]">
+                    {unlockedTitles.length}
+                    {"\u4ef6\u89e3\u653e"}
+                  </span>
+                  {notice ? (
+                    <span className="rounded-full bg-[#f2efff] px-3 py-1 text-xs font-black text-[#7c6ee6]">
+                      {notice}
+                    </span>
+                  ) : null}
+                </div>
+              </div>
+            </summary>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              {achievements.map((achievement) => (
+                <span
+                  key={achievement.id}
+                  className={`rounded-full px-3 py-1.5 text-xs font-black ${
+                    achievement.unlocked
+                      ? "bg-[#fff8ee] text-[#bd8648] ring-1 ring-[#f2dfc3]"
+                      : "bg-[#fbfaff] text-[#aaa2bd] ring-1 ring-[#ece7fb]"
+                  }`}
+                >
+                  {achievement.unlocked ? "\u2726 " : ""}
+                  {achievement.label}
+                </span>
+              ))}
+            </div>
+          </details>
 
           <section className="min-w-0 rounded-3xl border border-[#ece7fb] bg-white/90 p-5 shadow-[0_14px_34px_rgba(126,112,174,0.09)]">
             <div className="mb-3 flex items-center justify-between">
@@ -321,7 +651,6 @@ export default function MyPage() {
               )}
             </div>
           </section>
-        </div>
       </div>
     </AppShell>
   );
@@ -335,26 +664,93 @@ function ProfileBadge({
   value: number | string;
 }) {
   return (
-    <div className="rounded-full border border-[#ece7fb] bg-white px-4 py-3 text-center shadow-[0_8px_18px_rgba(126,112,174,0.08)]">
-      <p className="truncate text-[11px] font-black text-[#9b94aa]">{label}</p>
-      <p className="mt-0.5 truncate text-lg font-black text-[#7c6ee6]">
-        {value}
-      </p>
-    </div>
+    <span className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-[#ece7fb] bg-white px-3 py-1.5 text-xs shadow-[0_8px_18px_rgba(126,112,174,0.08)]">
+      <span className="shrink-0 text-[#aaa2bd]">{label}</span>
+      <span className="truncate font-black text-[#7c6ee6]">{value}</span>
+    </span>
   );
 }
 
-function MiniProfileNote({
-  label,
-  value,
+function DecorationPicker({
+  title,
+  items,
+  emptyText,
+  equipped,
+  onEquip,
 }: {
-  label: string;
-  value: number | string;
+  title: string;
+  items: typeof decorationItems;
+  emptyText: string;
+  equipped: Record<string, string>;
+  onEquip: (itemId: string, slot: string) => void;
 }) {
   return (
-    <span className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-bold text-[#746d82] ring-1 ring-[#ece7fb]">
-      <span className="shrink-0 text-[#aaa2bd]">{label}</span>
-      <span className="truncate font-black text-[#4a4458]">{value}</span>
-    </span>
+    <section className="rounded-3xl border border-[#ece7fb] bg-white/90 p-5 shadow-[0_14px_34px_rgba(126,112,174,0.09)]">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <p className="text-xs font-black text-[#8b7cf6]">
+            {"\u30ab\u30b9\u30bf\u30e0"}
+          </p>
+          <h2 className="text-xl font-black">{title}</h2>
+        </div>
+        <Link
+          href="/shop"
+          className="rounded-full bg-[#f2efff] px-3 py-1.5 text-xs font-black text-[#7c6ee6]"
+        >
+          {"\u30b7\u30e7\u30c3\u30d7\u3078"}
+        </Link>
+      </div>
+
+      {items.length === 0 ? (
+        <div className="rounded-3xl bg-[#fbfaff] p-4 text-sm text-[#746d82]">
+          <p>{emptyText}</p>
+          <Link
+            href="/shop"
+            className="mt-3 inline-flex rounded-full bg-[#8b7cf6] px-4 py-2 text-xs font-black text-white"
+          >
+            {"\u3082\u3063\u3068\u98fe\u308b"}
+          </Link>
+        </div>
+      ) : (
+        <div className="grid gap-2">
+          {items.map((item) => {
+            const active = equipped[item.slot] === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => onEquip(item.id, item.slot)}
+                disabled={active}
+                className={`flex items-center justify-between gap-3 rounded-3xl border p-3 text-left transition ${
+                  active
+                    ? "border-[#ded7fb] bg-[#fbfaff]"
+                    : "border-[#ece7fb] bg-white hover:bg-[#fbfaff]"
+                }`}
+              >
+                <span className="flex min-w-0 items-center gap-3">
+                  <span className={`size-10 shrink-0 rounded-2xl ${item.tone}`} />
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-black">
+                      {item.name}
+                    </span>
+                    <span className="text-xs font-bold text-[#9b94aa]">
+                      {active ? "\u88c5\u5099\u4e2d" : "\u88c5\u5099\u3067\u304d\u307e\u3059"}
+                    </span>
+                  </span>
+                </span>
+                <span
+                  className={`shrink-0 rounded-full px-3 py-1 text-xs font-black ${
+                    active
+                      ? "bg-[#fff8ee] text-[#bd8648]"
+                      : "bg-[#f2efff] text-[#7c6ee6]"
+                  }`}
+                >
+                  {active ? "\u88c5\u5099\u4e2d" : "\u9078\u3076"}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </section>
   );
 }
