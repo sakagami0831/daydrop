@@ -149,7 +149,16 @@ export function DiaryDetail({ diaryId }: { diaryId: string }) {
           <div className="mb-4 flex items-start justify-between gap-3">
             <div className="flex min-w-0 items-center gap-3">
               <span className="grid size-11 shrink-0 place-items-center rounded-full bg-[#f0edff] font-black text-[#8b7cf6]">
-                {author?.avatar ?? "?"}
+                {author?.avatarImageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={author.avatarImageUrl}
+                    alt=""
+                    className="size-full rounded-full object-cover"
+                  />
+                ) : (
+                  author?.avatar ?? "?"
+                )}
               </span>
               <div className="min-w-0">
                 <p className="truncate font-black">{author?.name ?? "Unknown"}</p>
@@ -279,7 +288,16 @@ export function DiaryDetail({ diaryId }: { diaryId: string }) {
               <article key={impression.id} className="rounded-2xl border border-[#ece7fb] bg-white p-4 shadow-sm">
                 <div className="mb-2 flex items-center gap-2">
                   <span className="grid size-8 place-items-center rounded-full bg-[#f0edff] text-sm font-black text-[#8b7cf6]">
-                    {writer?.avatar ?? "?"}
+                    {writer?.avatarImageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={writer.avatarImageUrl}
+                        alt=""
+                        className="size-full rounded-full object-cover"
+                      />
+                    ) : (
+                      writer?.avatar ?? "?"
+                    )}
                   </span>
                   <span className="font-bold">{writer?.name ?? "Unknown"}</span>
                 </div>
