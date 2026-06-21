@@ -71,7 +71,16 @@ export default function DiscoverPage() {
                   className="flex items-center gap-2 rounded-xl bg-[#fbfaff] p-2"
                 >
                   <span className="grid size-8 place-items-center rounded-full bg-[#f0edff] text-xs font-black text-[#8b7cf6]">
-                    {user.avatar}
+                    {user.avatarImageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={user.avatarImageUrl}
+                        alt=""
+                        className="size-full rounded-full object-cover"
+                      />
+                    ) : (
+                      user.avatar
+                    )}
                   </span>
                   <div className="min-w-0">
                     <p className="truncate text-sm font-black">{user.name}</p>
