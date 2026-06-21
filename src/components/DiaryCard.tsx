@@ -69,7 +69,16 @@ export function DiaryCard({ diary }: { diary: Diary }) {
         <div className="mt-auto flex items-center justify-between gap-2 pt-3">
           <div className="flex min-w-0 items-center gap-1.5">
             <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[#f0edff] text-[11px] font-black text-[#8b7cf6]">
-              {author?.avatar ?? "?"}
+              {author?.avatarImageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={author.avatarImageUrl}
+                  alt=""
+                  className="size-full rounded-full object-cover"
+                />
+              ) : (
+                author?.avatar ?? "?"
+              )}
             </span>
             <div className="min-w-0">
               <p className="truncate text-xs font-black">
