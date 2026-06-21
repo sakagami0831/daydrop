@@ -164,6 +164,7 @@ export default function MyPage() {
     equippedShopItemIds,
     updateProfile,
     equipShopItem,
+    logout,
   } = useDayDrop();
   const [notice, setNotice] = useState("");
   const [editing, setEditing] = useState(false);
@@ -307,6 +308,8 @@ export default function MyPage() {
         : activeDecorations.includes("theme-notebook")
           ? "bg-[linear-gradient(135deg,#fff9ed,#ffffff_55%,#f2efff)]"
           : "bg-white";
+  const avatarImageUrl = currentUser.avatarImageUrl ?? "";
+  const headerImageUrl = currentUser.headerImageUrl ?? "";
 
   const applyTitleCombo = (prefix = titlePrefix, suffix = titleSuffix) => {
     const title = `${prefix} ${suffix}`;
@@ -352,17 +355,82 @@ export default function MyPage() {
     );
   };
 
+  const updateImage = (
+    file: File | undefined,
+    field: "avatarImageUrl" | "headerImageUrl",
+  ) => {
+    if (!file) {
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result !== "string") {
+        return;
+      }
+      updateProfile({ [field]: reader.result });
+      setNotice(
+        field === "avatarImageUrl"
+          ? "\u30a2\u30a4\u30b3\u30f3\u3092\u5909\u66f4\u3057\u307e\u3057\u305f\u3002"
+          : "\u30d8\u30c3\u30c0\u30fc\u3092\u5909\u66f4\u3057\u307e\u3057\u305f\u3002",
+      );
+    };
+    reader.readAsDataURL(file);
+  };
+
   return (
     <AppShell>
       <div className="mx-auto grid max-w-6xl gap-4">
           <section className={`overflow-hidden rounded-3xl border border-[#ece7fb] ${previewClass} shadow-[0_18px_42px_rgba(126,112,174,0.12)]`}>
-            <div className={`h-32 ${headerClass}`} />
+            <label
+              className={`group relative block h-36 cursor-pointer overflow-hidden ${headerClass}`}
+            >
+              {headerImageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={headerImageUrl}
+                  alt=""
+                  className="size-full object-cover"
+                />
+              ) : null}
+              <span className="absolute right-4 top-4 rounded-full bg-white/90 px-3 py-1.5 text-xs font-black text-[#7c6ee6] opacity-95 shadow-sm transition group-hover:bg-[#f2efff]">
+                {"\u30d8\u30c3\u30c0\u30fc\u3092\u5909\u66f4"}
+              </span>
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(event) =>
+                  updateImage(event.target.files?.[0], "headerImageUrl")
+                }
+              />
+            </label>
             <div className="-mt-12 grid gap-5 px-5 pb-5 lg:grid-cols-[minmax(0,1fr)_260px]">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-end justify-between gap-3">
-                  <div className="grid size-24 place-items-center rounded-full border-4 border-white bg-[#f4efff] text-4xl font-black text-[#8b7cf6] shadow-[0_12px_24px_rgba(126,112,174,0.16)]">
-                    {avatar}
-                  </div>
+                  <label className="group relative grid size-24 cursor-pointer place-items-center overflow-hidden rounded-full border-4 border-white bg-[#f4efff] text-4xl font-black text-[#8b7cf6] shadow-[0_12px_24px_rgba(126,112,174,0.16)]">
+                    {avatarImageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={avatarImageUrl}
+                        alt=""
+                        className="size-full object-cover"
+                      />
+                    ) : (
+                      avatar
+                    )}
+                    <span className="absolute inset-x-0 bottom-0 bg-white/90 py-1 text-center text-[10px] font-black text-[#7c6ee6] opacity-95">
+                      {"\u5909\u66f4"}
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(event) =>
+                        updateImage(event.target.files?.[0], "avatarImageUrl")
+                      }
+                    />
+                  </label>
                   <div className="flex flex-wrap gap-2">
                     <button
                       onClick={() => setEditing((value) => !value)}
@@ -376,6 +444,12 @@ export default function MyPage() {
                     >
                       {"\u3082\u3063\u3068\u98fe\u308b"}
                     </Link>
+                    <button
+                      onClick={logout}
+                      className="rounded-full bg-white px-4 py-2 text-xs font-black text-[#9b94aa] shadow-sm ring-1 ring-[#ece7fb]"
+                    >
+                      {"\u30ed\u30b0\u30a2\u30a6\u30c8"}
+                    </button>
                   </div>
                 </div>
 
@@ -479,9 +553,12 @@ export default function MyPage() {
             </div>
 
             <div className="grid gap-4 lg:grid-cols-3">
-              <div className="rounded-3xl bg-[#fbfaff] p-4">
+                  <div className="rounded-3xl bg-[#fbfaff] p-4">
                 <p className="text-xs font-black text-[#8b7cf6]">
                   {"\u30a2\u30a4\u30b3\u30f3"}
+                </p>
+                <p className="mt-1 text-xs font-bold text-[#9b94aa]">
+                  {"\u753b\u50cf\u304c\u3042\u308b\u5834\u5408\u306f\u753b\u50cf\u3092\u512a\u5148\u3057\u307e\u3059\u3002"}
                 </p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {avatarOptions.map((option) => (
