@@ -2,11 +2,14 @@ export type Visibility = "public" | "followers" | "specified";
 
 export type User = {
   id: string;
+  email?: string;
   name: string;
   handle: string;
   title: string;
   bio: string;
   avatar: string;
+  avatarImageUrl?: string;
+  headerImageUrl?: string;
   followers: string[];
   following: string[];
   coinBalance: number;
